@@ -1,0 +1,7 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "baby-toy-portal",
+	"compatibility_date": "2026-06-13",
+	"compatibility_flags": ["nodejs_als"],
+	"pages_build_output_dir": ".svelte-kit/cloudflare"
+}
