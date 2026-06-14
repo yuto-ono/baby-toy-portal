@@ -68,12 +68,12 @@ SvelteKitでは、先頭に `+` が付くファイルがルーティングのた
 
 Cloudflare Pages では、以下のビルド設定を使用します。
 
-| 項目 | 設定値 |
-| --- | --- |
-| Production branch | `main` |
-| Build command | `pnpm build` |
-| Build output directory | `build` |
-| Root directory | `/` または空欄 |
+| 項目                   | 設定値         |
+| ---------------------- | -------------- |
+| Production branch      | `main`         |
+| Build command          | `pnpm build`   |
+| Build output directory | `build`        |
+| Root directory         | `/` または空欄 |
 
 Pages v3 のビルド環境では、`package.json` の `engines` や `packageManager` からバージョンが自動検出されないため、Production と Preview の環境変数 `NODE_VERSION`, `PNPM_VERSION` を設定します。
 
