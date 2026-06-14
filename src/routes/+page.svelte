@@ -65,7 +65,6 @@
 			font-size: clamp(0.8rem, 2vw, 1rem);
 			font-weight: 800;
 			letter-spacing: 0.14em;
-			text-transform: uppercase;
 		}
 
 		h1 {
