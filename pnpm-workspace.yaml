@@ -1,6 +1,4 @@
 allowBuilds:
-  workerd: true
-  sharp: true
   esbuild: true
   '@parcel/watcher': false
 saveExact: true
