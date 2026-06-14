@@ -42,10 +42,7 @@
 				style:--note-color={note.color}
 				aria-label={`${note.solfege}、${note.name}`}
 				onpointerdown={() => playNote(index)}
-			>
-				<span class="solfege">{note.solfege}</span>
-				<span class="note-name">{note.name}</span>
-			</button>
+			></button>
 		{/each}
 	</div>
 </section>
@@ -105,19 +102,6 @@
 			outline: 4px solid #fff;
 			outline-offset: -8px;
 		}
-	}
-
-	.solfege {
-		font-size: clamp(1rem, 4vw, 3.25rem);
-		font-weight: 900;
-		line-height: 1.05;
-	}
-
-	.note-name {
-		font-size: clamp(0.65rem, 1.8vw, 1.35rem);
-		font-weight: 900;
-		line-height: 1;
-		opacity: 0.75;
 	}
 
 	@media (max-height: 620px) and (orientation: landscape) {
