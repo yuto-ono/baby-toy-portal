@@ -7,7 +7,7 @@
 	<title>楽器で遊ぼう | Baby Toy Portal</title>
 	<meta
 		name="description"
-		content="いろいろな楽器を演奏して楽しめる、子ども向けのあそびページです。"
+		content="ドレミのボタンをタップして、1オクターブの音を鳴らして遊べる子ども向けページです。"
 	/>
 </svelte:head>
 
