@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-	<title>Baby Toy Portal</title>
-	<rect width="512" height="512" fill="#fff8e7"/>
-	<circle cx="116" cy="116" r="62" fill="#ffd86f"/>
-	<circle cx="412" cy="410" r="82" fill="#8edbd3"/>
-	<path d="M322 105v224c0 51-42 93-93 93s-93-42-93-93 42-93 93-93c16 0 31 4 44 11V142l49-37Z" fill="#df5b69"/>
-	<circle cx="229" cy="329" r="45" fill="#fff8e7"/>
-</svg>
