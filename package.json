@@ -2,6 +2,10 @@
 	"name": "baby-toy-portal",
 	"private": true,
 	"version": "0.0.1",
+	"packageManager": "pnpm@11.6.0",
+	"engines": {
+		"node": "24.16.0"
+	},
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
