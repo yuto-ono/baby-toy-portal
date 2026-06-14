@@ -1,7 +1,6 @@
 {
 	"id": "/",
 	"name": "Baby Toy Portal",
-	"short_name": "Baby Toy",
 	"description": "子どもが楽しく遊べる、やさしいおもちゃのポータルです。",
 	"lang": "ja",
 	"start_url": "/",
