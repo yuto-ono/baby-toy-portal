@@ -46,7 +46,6 @@ src/
 ├── lib/                    # 複数ページで共有するコードやアセット
 ├── routes/
 │   ├── +page.svelte        # トップページ
-│   ├── PlayCard.svelte     # トップページ固有のコンポーネント
 │   └── instruments/
 │       └── +page.svelte    # 楽器ページ
 └── service-worker.ts       # PWAのキャッシュと更新処理
@@ -68,11 +67,11 @@ SvelteKitでは、先頭に `+` が付くファイルがルーティングのた
 
 Cloudflare Pages では、以下のビルド設定を使用します。
 
-| 項目                   | 設定値         |
-| ---------------------- | -------------- |
-| Production branch      | `main`         |
-| Build command          | `pnpm build`   |
-| Build output directory | `build`        |
+| 項目                   | 設定値       |
+| ---------------------- | ------------ |
+| Production branch      | `main`       |
+| Build command          | `pnpm build` |
+| Build output directory | `build`      |
 
 Pages v3 のビルド環境では、`package.json` の `engines` や `packageManager` からバージョンが自動検出されないため、Production と Preview の環境変数 `NODE_VERSION`, `PNPM_VERSION` を設定します。
 
