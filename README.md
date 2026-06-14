@@ -46,8 +46,7 @@ src/
 │   ├── +page.svelte        # トップページ
 │   ├── PlayCard.svelte     # トップページ固有のコンポーネント
 │   └── instruments/
-│       ├── +page.svelte    # 楽器ページ
-│       └── PageHeading.svelte
+│       └── +page.svelte    # 楽器ページ
 └── service-worker.ts       # PWAのキャッシュと更新処理
 ```
 
