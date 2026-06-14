@@ -32,6 +32,13 @@
 			'Helvetica Neue', 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
 	}
 
+	main,
+	main :global(*) {
+		user-select: none;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+	}
+
 	main {
 		position: fixed;
 		inset: 0;
@@ -45,7 +52,5 @@
 		background:
 			radial-gradient(circle at 12% 18%, #ffd86f 0 4.5rem, transparent 4.6rem),
 			radial-gradient(circle at 88% 82%, #8edbd3 0 6rem, transparent 6.1rem), $page-background;
-		user-select: none;
-		-webkit-user-select: none;
 	}
 </style>
