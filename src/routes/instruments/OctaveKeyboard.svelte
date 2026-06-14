@@ -56,29 +56,28 @@
 	.instrument {
 		width: min(100%, 72rem);
 		align-self: center;
-		padding: clamp(1rem, 3vw, 2rem) clamp(0.75rem, 2.5vw, 1.5rem);
+		padding: clamp(1rem, 3vw, 2rem) clamp(0.5rem, 2vw, 1.5rem);
 	}
 
 	.note-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		column-gap: clamp(0.55rem, 2vw, 1rem);
-		row-gap: clamp(0.9rem, 2.5vw, 1.5rem);
+		height: clamp(10rem, 55dvh, 30rem);
+		grid-template-columns: repeat(8, minmax(0, 1fr));
+		gap: clamp(0.2rem, 1vw, 0.75rem);
 	}
 
 	button {
 		--note-color: #fff;
 
 		display: flex;
-		aspect-ratio: 1;
 		min-width: 0;
 		align-items: center;
 		justify-content: center;
 		flex-direction: column;
-		gap: 0.15rem;
-		padding: 0.5rem;
+		gap: clamp(0.05rem, 0.5vw, 0.15rem);
+		padding: clamp(0.15rem, 1vw, 0.5rem);
 		border: clamp(2px, 0.4vw, 4px) solid $ink;
-		border-radius: clamp(1rem, 3vw, 1.75rem);
+		border-radius: clamp(0.65rem, 2vw, 1.75rem);
 		background: var(--note-color);
 		box-shadow: 0 clamp(0.3rem, 1vw, 0.55rem) 0 $ink;
 		color: $ink;
@@ -109,13 +108,13 @@
 	}
 
 	.solfege {
-		font-size: clamp(1.5rem, 6vw, 3.25rem);
+		font-size: clamp(1rem, 4vw, 3.25rem);
 		font-weight: 900;
 		line-height: 1.05;
 	}
 
 	.note-name {
-		font-size: clamp(0.9rem, 3vw, 1.35rem);
+		font-size: clamp(0.65rem, 1.8vw, 1.35rem);
 		font-weight: 900;
 		line-height: 1;
 		opacity: 0.75;
@@ -127,12 +126,8 @@
 		}
 
 		.note-grid {
+			height: min(50dvh, 14rem);
 			column-gap: 0.6rem;
-			row-gap: 0.85rem;
-		}
-
-		button {
-			aspect-ratio: 1.3 / 1;
 		}
 	}
 </style>
