@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { createTonePlayer } from './tonePlayer';
 
 	const notes = [
 		{ solfege: 'ド', name: 'C', frequency: 261.63, color: '#ff8f91' },
@@ -12,31 +13,12 @@
 		{ solfege: 'ド', name: 'C', frequency: 523.25, color: '#ef91ca' }
 	];
 
-	let audioContext: AudioContext | null = null;
+	const tonePlayer = createTonePlayer();
 	let activeNote = $state<number | null>(null);
 	let activeNoteTimer: ReturnType<typeof setTimeout> | undefined;
 
 	function playNote(noteIndex: number) {
-		audioContext ??= new AudioContext();
-
-		if (audioContext.state === 'suspended') {
-			void audioContext.resume();
-		}
-
-		const now = audioContext.currentTime;
-		const oscillator = audioContext.createOscillator();
-		const gain = audioContext.createGain();
-
-		oscillator.type = 'sine';
-		oscillator.frequency.setValueAtTime(notes[noteIndex].frequency, now);
-		gain.gain.setValueAtTime(0.0001, now);
-		gain.gain.exponentialRampToValueAtTime(0.35, now + 0.015);
-		gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
-
-		oscillator.connect(gain);
-		gain.connect(audioContext.destination);
-		oscillator.start(now);
-		oscillator.stop(now + 0.8);
+		tonePlayer.play(notes[noteIndex].frequency);
 
 		activeNote = noteIndex;
 		clearTimeout(activeNoteTimer);
@@ -47,7 +29,7 @@
 
 	onDestroy(() => {
 		clearTimeout(activeNoteTimer);
-		void audioContext?.close();
+		tonePlayer.destroy();
 	});
 </script>
 
