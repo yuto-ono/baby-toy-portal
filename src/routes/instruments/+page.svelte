@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { PageNavigation } from '$lib';
+	import OctaveKeyboard from './OctaveKeyboard.svelte';
 </script>
 
 <svelte:head>
@@ -12,6 +13,7 @@
 
 <main>
 	<PageNavigation title="楽器で遊ぼう" />
+	<OctaveKeyboard />
 </main>
 
 <style lang="scss">
@@ -33,6 +35,7 @@
 	main {
 		display: grid;
 		min-height: 100dvh;
+		grid-template-rows: auto 1fr;
 		place-items: start center;
 		padding: 0;
 		overflow: hidden;
