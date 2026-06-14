@@ -63,3 +63,18 @@ SvelteKitでは、先頭に `+` が付くファイルがルーティングのた
 - ページ固有のコードはページの近くに置く
 - 小さなコンポーネントを組み合わせ、遊びを追加しやすくする
 - 変更後は `pnpm check`、`pnpm lint`、`pnpm build` を実行する
+
+## Cloudflare Pages
+
+Cloudflare Pages では、以下のビルド設定を使用します。
+
+| 項目 | 設定値 |
+| --- | --- |
+| Production branch | `main` |
+| Build command | `pnpm build` |
+| Build output directory | `build` |
+| Root directory | `/` または空欄 |
+
+Pages v3 のビルド環境では、`package.json` の `engines` や `packageManager` からバージョンが自動検出されないため、Production と Preview の環境変数 `NODE_VERSION`, `PNPM_VERSION` を設定します。
+
+Node.js または pnpm を更新するときは、[`mise.toml`](./mise.toml)、[`package.json`](./package.json)、Cloudflare Pages の環境変数を同じバージョンに更新してください。
