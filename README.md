@@ -61,7 +61,7 @@ SvelteKitでは、先頭に `+` が付くファイルがルーティングのた
 - iPad 等のタブレット端末での操作を考慮する
 - 色だけに頼らず、形や文言でも意味を伝える
 - ページ固有のコードはページの近くに置く
-- 変更後は `pnpm check`, `pnpm lint` を実行する
+- 変更後は `pnpm check`, `pnpm lint`, `pnpm test` を実行する
 
 ## Cloudflare Pages
 

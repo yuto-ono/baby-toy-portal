@@ -31,7 +31,8 @@ export default defineConfig({
 						instances: [{ browser: 'chromium', headless: true }]
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
+					// NOTE: サンプルは参考用に残し、CI では Chromium を起動しない。
+					exclude: ['src/lib/server/**', 'src/lib/vitest-examples/Welcome.svelte.spec.ts']
 				}
 			},
 
