@@ -40,8 +40,7 @@
 		margin: 0;
 		background: $page-background;
 		color: $ink;
-		font-family:
-			'Helvetica Neue', 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+		font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
 	}
 
 	main {
