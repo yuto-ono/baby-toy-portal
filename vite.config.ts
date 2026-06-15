@@ -18,6 +18,9 @@ export default defineConfig({
 			})
 		})
 	],
+	server: {
+		allowedHosts: ['.ngrok-free.app']
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
