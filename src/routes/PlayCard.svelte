@@ -6,12 +6,10 @@
 	let {
 		href,
 		label,
-		description,
 		icon
 	}: {
 		href: RouteId;
 		label: string;
-		description: string;
 		icon: Snippet;
 	} = $props();
 </script>
@@ -21,7 +19,6 @@
 		{@render icon()}
 	</span>
 	<span class="label">{label}</span>
-	<span class="description">{description}</span>
 </a>
 
 <style lang="scss">
@@ -72,12 +69,6 @@
 		font-size: clamp(1.75rem, 7vw, 2.5rem);
 		font-weight: 800;
 		line-height: 1.25;
-	}
-
-	.description {
-		margin-top: 0.6rem;
-		font-size: 1rem;
-		font-weight: 700;
 	}
 
 	@media (max-width: 480px) {
