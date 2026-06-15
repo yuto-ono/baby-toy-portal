@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import Settings from '@lucide/svelte/icons/settings';
 	import Music from '@lucide/svelte/icons/music';
 	import PlayCard from './PlayCard.svelte';
 </script>
@@ -9,6 +11,10 @@
 </svelte:head>
 
 <main>
+	<a class="settings-link" href={resolve('/settings')} aria-label="保護者設定">
+		<Settings size={24} strokeWidth={2.75} aria-hidden="true" />
+	</a>
+
 	<header class="page-heading">
 		<p>Baby Toy Portal</p>
 		<h1>なにして遊ぶ？</h1>
@@ -44,6 +50,7 @@
 	}
 
 	main {
+		position: relative;
 		display: flex;
 		min-height: 100dvh;
 		align-items: center;
@@ -53,6 +60,29 @@
 		background:
 			radial-gradient(circle at 10% 14%, #ffd86f 0 4.5rem, transparent 4.6rem),
 			radial-gradient(circle at 90% 86%, #8edbd3 0 6rem, transparent 6.1rem), $page-background;
+	}
+
+	.settings-link {
+		position: absolute;
+		top: max(1rem, env(safe-area-inset-top));
+		right: max(1rem, env(safe-area-inset-right));
+		display: grid;
+		width: 3rem;
+		height: 3rem;
+		place-items: center;
+		border: 2px solid $ink;
+		border-radius: 999px;
+		background: #fff;
+		color: inherit;
+		font-size: 0.9rem;
+		font-weight: 800;
+		text-decoration: none;
+		box-shadow: 3px 3px 0 #ffd86f;
+
+		&:focus-visible {
+			outline: 4px solid #67c7bf;
+			outline-offset: 3px;
+		}
 	}
 
 	.page-heading {
