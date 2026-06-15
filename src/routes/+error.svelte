@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import House from '@lucide/svelte/icons/house';
 
 	const isNotFound = $derived(page.status === 404);
 	const message = $derived(isNotFound ? 'ページが見つかりません' : 'エラーが発生しました');
@@ -18,7 +19,10 @@
 		{#if isNotFound}
 			<p class="description">お探しのページは、移動または削除された可能性があります。</p>
 		{/if}
-		<a href={resolve('/')}>トップへ戻る</a>
+		<a href={resolve('/')}>
+			<House size={20} strokeWidth={2.75} aria-hidden="true" />
+			ホーム画面へ戻る
+		</a>
 	</section>
 </main>
 
@@ -85,6 +89,7 @@
 		min-height: 3.5rem;
 		align-items: center;
 		justify-content: center;
+		gap: 0.5rem;
 		margin-top: 2rem;
 		padding: 0.75rem 1.75rem;
 		border: 3px solid $ink;
