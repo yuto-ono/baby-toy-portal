@@ -17,7 +17,7 @@
 
 	<header class="page-heading">
 		<p>Baby Toy Portal</p>
-		<h1>なにして遊ぶ？</h1>
+		<h1>なにして あそぶ？</h1>
 	</header>
 
 	<nav aria-label="遊びを選ぶ">
@@ -25,12 +25,7 @@
 			<Music size={52} strokeWidth={2.75} />
 		{/snippet}
 
-		<PlayCard
-			href="/instruments"
-			label="楽器で遊ぼう"
-			description="音を鳴らして楽しもう！"
-			icon={musicIcon}
-		/>
+		<PlayCard href="/instruments" label="楽器で あそぼう" icon={musicIcon} />
 	</nav>
 </main>
 
