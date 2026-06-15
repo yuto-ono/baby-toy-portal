@@ -17,7 +17,7 @@
 
 	<header class="page-heading">
 		<p>Baby Toy Portal</p>
-		<h1>なにして遊ぶ？</h1>
+		<h1>なにして あそぶ？</h1>
 	</header>
 
 	<nav aria-label="遊びを選ぶ">
