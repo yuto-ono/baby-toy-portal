@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>楽器で遊ぼう | Baby Toy Portal</title>
+	<title>楽器で あそぼう | Baby Toy Portal</title>
 	<meta
 		name="description"
 		content="ドレミのボタンをタップして、1オクターブの音を鳴らして遊べる子ども向けページです。"
@@ -12,7 +12,7 @@
 </svelte:head>
 
 <main>
-	<PageNavigation title="楽器で遊ぼう" />
+	<PageNavigation title="楽器で あそぼう" />
 	<OctaveKeyboard />
 </main>
 

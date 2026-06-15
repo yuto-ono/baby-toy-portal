@@ -25,7 +25,7 @@
 			<Music size={52} strokeWidth={2.75} />
 		{/snippet}
 
-		<PlayCard href="/instruments" label="楽器で遊ぼう" icon={musicIcon} />
+		<PlayCard href="/instruments" label="楽器で あそぼう" icon={musicIcon} />
 	</nav>
 </main>
 
