@@ -16,6 +16,8 @@
 	const tonePlayer = createTonePlayer();
 	let activeNote = $state<number | null>(null);
 	let activeNoteTimer: ReturnType<typeof setTimeout> | undefined;
+	let activePointerId: number | null = null;
+	let lastPlayedNote: number | null = null;
 
 	function playNote(noteIndex: number) {
 		tonePlayer.play(notes[noteIndex].frequency);
@@ -27,21 +29,82 @@
 		}, 400);
 	}
 
+	function getNoteIndexAtPoint(clientX: number, clientY: number) {
+		const key = document
+			.elementFromPoint(clientX, clientY)
+			?.closest<HTMLButtonElement>('button[data-note-index]');
+
+		if (!key || !key.closest('.note-grid')) {
+			return null;
+		}
+
+		const noteIndex = Number(key.dataset.noteIndex);
+		return Number.isInteger(noteIndex) ? noteIndex : null;
+	}
+
+	function handlePointerDown(event: PointerEvent) {
+		if (activePointerId !== null) {
+			return;
+		}
+
+		const noteIndex = getNoteIndexAtPoint(event.clientX, event.clientY);
+		if (noteIndex === null) {
+			return;
+		}
+
+		activePointerId = event.pointerId;
+		lastPlayedNote = noteIndex;
+		(event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
+		playNote(noteIndex);
+	}
+
+	function handlePointerMove(event: PointerEvent) {
+		if (event.pointerId !== activePointerId) {
+			return;
+		}
+
+		const noteIndex = getNoteIndexAtPoint(event.clientX, event.clientY);
+		if (noteIndex === null || noteIndex === lastPlayedNote) {
+			return;
+		}
+
+		lastPlayedNote = noteIndex;
+		playNote(noteIndex);
+	}
+
+	function finishPointer(event: PointerEvent) {
+		if (event.pointerId !== activePointerId) {
+			return;
+		}
+
+		activePointerId = null;
+		lastPlayedNote = null;
+	}
+
 	onDestroy(() => {
 		clearTimeout(activeNoteTimer);
 		tonePlayer.destroy();
 	});
 </script>
 
-<section class="instrument" aria-label="1オクターブの鍵盤">
-	<div class="note-grid">
+<section class="instrument">
+	<div
+		class="note-grid"
+		role="group"
+		aria-label="1オクターブの鍵盤"
+		onpointerdown={handlePointerDown}
+		onpointermove={handlePointerMove}
+		onpointerup={finishPointer}
+		onpointercancel={finishPointer}
+		onlostpointercapture={finishPointer}
+	>
 		{#each notes as note, index (note.frequency)}
 			<button
 				type="button"
 				class:active={activeNote === index}
 				style:--note-color={note.color}
 				aria-label={`${note.solfege}、${note.name}`}
-				onpointerdown={() => playNote(index)}
+				data-note-index={index}
 			></button>
 		{/each}
 	</div>
@@ -61,6 +124,7 @@
 		height: clamp(10rem, 55dvh, 30rem);
 		grid-template-columns: repeat(8, minmax(0, 1fr));
 		gap: clamp(0.2rem, 1vw, 0.75rem);
+		touch-action: none;
 	}
 
 	button {
@@ -80,7 +144,6 @@
 		color: $ink;
 		cursor: pointer;
 		font: inherit;
-		touch-action: manipulation;
 		transition:
 			transform 80ms ease,
 			box-shadow 80ms ease,
