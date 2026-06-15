@@ -3,7 +3,9 @@
 	import { resolve } from '$app/paths';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import LockKeyhole from '@lucide/svelte/icons/lock-keyhole';
-	import { isValidPin } from './pinCredential';
+	import PinKeypad from './PinKeypad.svelte';
+	import { pinInputActionFromKey, updatePin, type PinInputAction } from './pinInput';
+	import { MAX_PIN_LENGTH, isValidPin } from './pinCredential';
 
 	let {
 		onAuthenticate
@@ -20,7 +22,21 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent): void {
-		if (event.key === 'Escape') returnHome();
+		if (event.key === 'Escape') {
+			returnHome();
+			return;
+		}
+
+		const action = pinInputActionFromKey(event.key);
+		if (!action || isSubmitting) return;
+
+		event.preventDefault();
+		applyPinAction(action);
+	}
+
+	function applyPinAction(action: PinInputAction): void {
+		pin = updatePin(pin, action, MAX_PIN_LENGTH);
+		errorMessage = '';
 	}
 
 	async function submit(event: SubmitEvent): Promise<void> {
@@ -60,22 +76,32 @@
 	</a>
 
 	<div class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-		<div class="icon" aria-hidden="true">
-			<LockKeyhole size={44} strokeWidth={2.5} />
+		<div class="intro">
+			<div class="icon" aria-hidden="true">
+				<LockKeyhole size={44} strokeWidth={2.5} />
+			</div>
+			<p class="eyebrow">おとなのかたへ</p>
+			<h1 id="gate-title">保護者設定</h1>
+			<p class="description">設定を開くには、保護者PINを入力してください。</p>
 		</div>
-		<p class="eyebrow">おとなのかたへ</p>
-		<h1 id="gate-title">保護者設定</h1>
-		<p class="description">設定を開くには、保護者PINを入力してください。</p>
 
 		<form onsubmit={submit}>
 			<input
 				id="parent-pin"
 				type="password"
-				inputmode="numeric"
-				pattern="[0-9]*"
+				inputmode="none"
 				autocomplete="off"
+				readonly
 				bind:value={pin}
 				aria-describedby="pin-hint pin-error"
+			/>
+			<p id="pin-hint" class="hint">画面の数字ボタンで入力してください。</p>
+			<PinKeypad
+				label="保護者PINの数字入力"
+				disabled={isSubmitting}
+				onDigit={(digit) => applyPinAction({ type: 'append', digit })}
+				onBackspace={() => applyPinAction({ type: 'backspace' })}
+				onClear={() => applyPinAction({ type: 'clear' })}
 			/>
 			<p id="pin-error" class="error" aria-live="polite">{errorMessage}</p>
 
@@ -186,13 +212,9 @@
 	}
 
 	form {
+		width: min(100%, 20rem);
+		margin-inline: auto;
 		text-align: left;
-	}
-
-	label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 800;
 	}
 
 	input {
@@ -247,6 +269,41 @@
 		&:focus-visible {
 			outline: 4px solid $accent-yellow;
 			outline-offset: 3px;
+		}
+	}
+
+	@media (orientation: landscape) and (min-width: 44rem) {
+		main {
+			padding: 0.75rem;
+		}
+
+		.home-link {
+			position: absolute;
+			top: 0.75rem;
+			left: 0.75rem;
+		}
+
+		.gate {
+			display: grid;
+			width: min(calc(100% - 2rem), 46rem);
+			padding: 1.5rem 2rem;
+			grid-template-columns: minmax(13rem, 0.8fr) minmax(19rem, 1.2fr);
+			align-items: center;
+			gap: 1.5rem;
+		}
+
+		.icon {
+			width: 4rem;
+			height: 4rem;
+			margin-bottom: 0.75rem;
+		}
+
+		h1 {
+			font-size: clamp(1.75rem, 4vw, 2.5rem);
+		}
+
+		.description {
+			margin-bottom: 0;
 		}
 	}
 </style>

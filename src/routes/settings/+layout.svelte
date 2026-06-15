@@ -148,4 +148,20 @@
 		margin: 0;
 		box-shadow: 8px 8px 0 #ff8d8d;
 	}
+
+	@media (orientation: landscape) and (min-width: 44rem) {
+		.setup-page {
+			padding: 0.75rem;
+		}
+
+		.home-link {
+			position: absolute;
+			top: 0.75rem;
+			left: 0.75rem;
+		}
+
+		.setup-dialog {
+			width: min(calc(100% - 2rem), 48rem);
+		}
+	}
 </style>
