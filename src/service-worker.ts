@@ -8,12 +8,7 @@ const appShellPath = new URL('./', worker.location.href).pathname;
 const appAssets = [...build, ...files, appShellPath];
 
 worker.addEventListener('install', (event) => {
-	event.waitUntil(
-		caches
-			.open(cacheName)
-			.then((cache) => cache.addAll(appAssets))
-			.then(() => worker.skipWaiting())
-	);
+	event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(appAssets)));
 });
 
 worker.addEventListener('activate', (event) => {
@@ -25,6 +20,12 @@ worker.addEventListener('activate', (event) => {
 			)
 			.then(() => worker.clients.claim())
 	);
+});
+
+worker.addEventListener('message', (event) => {
+	if (event.data?.type === 'SKIP_WAITING') {
+		void worker.skipWaiting();
+	}
 });
 
 worker.addEventListener('fetch', (event) => {
