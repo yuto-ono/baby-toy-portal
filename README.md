@@ -63,6 +63,10 @@ SvelteKitでは、先頭に `+` が付くファイルがルーティングのた
 - ページ固有のコードはページの近くに置く
 - 変更後は `pnpm check`, `pnpm lint`, `pnpm test` を実行する
 
+## 全体見直し
+
+AIエージェントに「全体見直し」と依頼すると、[`AGENTS.md`](./AGENTS.md) の基準に沿ってコード全体をレビューします。明示的な許可なしに、コード変更や Issue 作成は行いません。
+
 ## Cloudflare Pages
 
 Cloudflare Pages では、以下のビルド設定を使用します。
