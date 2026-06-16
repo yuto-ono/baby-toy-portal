@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { createTonePlayer } from './tonePlayer';
 
@@ -66,8 +66,26 @@
 		pointerNotes.delete(event.pointerId);
 	}
 
-	onDestroy(() => {
-		tonePlayer.destroy();
+	onMount(() => {
+		function cleanupSession() {
+			pointerNotes.clear();
+			tonePlayer.destroy();
+		}
+
+		function handleVisibilityChange() {
+			if (document.visibilityState === 'hidden') {
+				cleanupSession();
+			}
+		}
+
+		window.addEventListener('pagehide', cleanupSession);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+
+		return () => {
+			window.removeEventListener('pagehide', cleanupSession);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			cleanupSession();
+		};
 	});
 </script>
 
