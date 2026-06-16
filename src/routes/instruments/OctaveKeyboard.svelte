@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { createTonePlayer } from './tonePlayer';
 
 	const notes = [
@@ -14,19 +15,11 @@
 	];
 
 	const tonePlayer = createTonePlayer();
-	let activeNote = $state<number | null>(null);
-	let activeNoteTimer: ReturnType<typeof setTimeout> | undefined;
-	let activePointerId: number | null = null;
-	let lastPlayedNote: number | null = null;
+	const pointerNotes = new SvelteMap<number, number>();
+	const activeNotes = $derived([...new Set(pointerNotes.values())]);
 
 	function playNote(noteIndex: number) {
 		tonePlayer.play(notes[noteIndex].frequency);
-
-		activeNote = noteIndex;
-		clearTimeout(activeNoteTimer);
-		activeNoteTimer = setTimeout(() => {
-			activeNote = null;
-		}, 400);
 	}
 
 	function getNoteIndexAtPoint(clientX: number, clientY: number) {
@@ -39,50 +32,41 @@
 		}
 
 		const noteIndex = Number(key.dataset.noteIndex);
-		return Number.isInteger(noteIndex) ? noteIndex : null;
+		return Number.isInteger(noteIndex) && noteIndex >= 0 && noteIndex < notes.length
+			? noteIndex
+			: null;
 	}
 
 	function handlePointerDown(event: PointerEvent) {
-		if (activePointerId !== null) {
-			return;
-		}
-
 		const noteIndex = getNoteIndexAtPoint(event.clientX, event.clientY);
 		if (noteIndex === null) {
 			return;
 		}
 
-		activePointerId = event.pointerId;
-		lastPlayedNote = noteIndex;
+		pointerNotes.set(event.pointerId, noteIndex);
 		(event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
 		playNote(noteIndex);
 	}
 
 	function handlePointerMove(event: PointerEvent) {
-		if (event.pointerId !== activePointerId) {
+		if (!pointerNotes.has(event.pointerId)) {
 			return;
 		}
 
 		const noteIndex = getNoteIndexAtPoint(event.clientX, event.clientY);
-		if (noteIndex === null || noteIndex === lastPlayedNote) {
+		if (noteIndex === null || noteIndex === pointerNotes.get(event.pointerId)) {
 			return;
 		}
 
-		lastPlayedNote = noteIndex;
+		pointerNotes.set(event.pointerId, noteIndex);
 		playNote(noteIndex);
 	}
 
 	function finishPointer(event: PointerEvent) {
-		if (event.pointerId !== activePointerId) {
-			return;
-		}
-
-		activePointerId = null;
-		lastPlayedNote = null;
+		pointerNotes.delete(event.pointerId);
 	}
 
 	onDestroy(() => {
-		clearTimeout(activeNoteTimer);
 		tonePlayer.destroy();
 	});
 </script>
@@ -101,7 +85,7 @@
 		{#each notes as note, index (note.frequency)}
 			<button
 				type="button"
-				class:active={activeNote === index}
+				class:active={activeNotes.includes(index)}
 				style:--note-color={note.color}
 				aria-label={`${note.solfege}、${note.name}`}
 				data-note-index={index}
