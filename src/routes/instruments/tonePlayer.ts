@@ -1,3 +1,22 @@
+const FULL_VOLUME_PEAK_GAIN = 0.3;
+const SILENCE_GAIN = 0.0001;
+const VOLUME_CURVE_LINEAR_WEIGHT = 0.45;
+const ATTACK_DURATION_SECONDS = 0.015;
+const TONE_DURATION_SECONDS = 2;
+
+export function getTonePeakGain(volume: number) {
+	if (!Number.isFinite(volume)) {
+		return 0;
+	}
+
+	const clampedVolume = Math.min(Math.max(volume, 0), 1);
+	return (
+		FULL_VOLUME_PEAK_GAIN *
+		clampedVolume *
+		(VOLUME_CURVE_LINEAR_WEIGHT + (1 - VOLUME_CURVE_LINEAR_WEIGHT) * clampedVolume)
+	);
+}
+
 export function createTonePlayer() {
 	let audioContext: AudioContext | null = null;
 	let resetVersion = 0;
@@ -39,21 +58,21 @@ export function createTonePlayer() {
 		}
 	}
 
-	function scheduleTone(context: AudioContext, frequency: number) {
+	function scheduleTone(context: AudioContext, frequency: number, peakGain: number) {
 		const now = context.currentTime;
 		const oscillator = context.createOscillator();
 		const gain = context.createGain();
 
 		oscillator.type = 'sine';
 		oscillator.frequency.setValueAtTime(frequency, now);
-		gain.gain.setValueAtTime(0.0001, now);
-		gain.gain.exponentialRampToValueAtTime(0.35, now + 0.015);
-		gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+		gain.gain.setValueAtTime(SILENCE_GAIN, now);
+		gain.gain.exponentialRampToValueAtTime(peakGain, now + ATTACK_DURATION_SECONDS);
+		gain.gain.exponentialRampToValueAtTime(SILENCE_GAIN, now + TONE_DURATION_SECONDS);
 
 		oscillator.connect(gain);
 		gain.connect(context.destination);
 		oscillator.start(now);
-		oscillator.stop(now + 0.8);
+		oscillator.stop(now + TONE_DURATION_SECONDS);
 	}
 
 	async function getReadyAudioContext(playVersion: number) {
@@ -88,7 +107,12 @@ export function createTonePlayer() {
 		return context;
 	}
 
-	async function play(frequency: number) {
+	async function play(frequency: number, volume = 1) {
+		const peakGain = getTonePeakGain(volume);
+		if (peakGain <= 0) {
+			return;
+		}
+
 		const playVersion = resetVersion;
 		const context = await getReadyAudioContext(playVersion);
 
@@ -96,7 +120,7 @@ export function createTonePlayer() {
 			return;
 		}
 
-		scheduleTone(context, frequency);
+		scheduleTone(context, frequency, peakGain);
 	}
 
 	function destroy() {

@@ -2,15 +2,18 @@
 	import { resolve } from '$app/paths';
 	import type { RouteId } from '$app/types';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import type { Snippet } from 'svelte';
 
 	let {
 		title,
 		backHref = '/',
-		backLabel = '戻る'
+		backLabel = '戻る',
+		actions
 	}: {
 		title: string;
 		backHref?: RouteId;
 		backLabel?: string;
+		actions?: Snippet;
 	} = $props();
 </script>
 
@@ -20,6 +23,11 @@
 		<span>{backLabel}</span>
 	</a>
 	<h1>{title}</h1>
+	{#if actions}
+		<div class="actions">
+			{@render actions()}
+		</div>
+	{/if}
 </header>
 
 <style lang="scss">
@@ -28,9 +36,10 @@
 	$accent-mint: #67c7bf;
 
 	.page-navigation {
-		display: flex;
+		display: grid;
 		width: 100%;
 		align-items: center;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		gap: clamp(1rem, 4vw, 2rem);
 		padding: 0.8rem clamp(1rem, 4vw, 1.5rem);
 		background: #fff;
@@ -74,14 +83,34 @@
 		letter-spacing: 0.03em;
 	}
 
-	@media (max-width: 480px) {
+	.actions {
+		min-width: 0;
+	}
+
+	@media (max-width: 640px) {
 		.page-navigation {
-			gap: 0.8rem;
+			gap: 0.5rem;
 			padding: 0.7rem;
 		}
 
 		.back-link {
-			padding: 0.6rem 0.75rem;
+			gap: 0;
+			padding: 0.6rem 0.65rem;
+
+			span {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				overflow: hidden;
+				clip: rect(0 0 0 0);
+				white-space: nowrap;
+			}
+		}
+
+		h1 {
+			font-size: 1.1rem;
+			line-height: 1.2;
+			word-break: keep-all;
 		}
 	}
 </style>

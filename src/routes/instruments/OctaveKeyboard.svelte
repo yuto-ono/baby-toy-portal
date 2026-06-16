@@ -18,8 +18,10 @@
 	const pointerNotes = new SvelteMap<number, number>();
 	const activeNotes = $derived([...new Set(pointerNotes.values())]);
 
+	let { volume }: { volume: number } = $props();
+
 	function playNote(noteIndex: number) {
-		tonePlayer.play(notes[noteIndex].frequency);
+		tonePlayer.play(notes[noteIndex].frequency, volume);
 	}
 
 	function getNoteIndexAtPoint(clientX: number, clientY: number) {
