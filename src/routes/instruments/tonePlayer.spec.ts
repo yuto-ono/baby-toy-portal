@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTonePlayer } from './tonePlayer';
+import { createTonePlayer, getTonePeakGain } from './tonePlayer';
 
 const currentTime = 10;
 
@@ -51,6 +51,21 @@ function createAudioContextMock(initialState: AudioContextState = 'running') {
 	};
 }
 
+describe('getTonePeakGain', () => {
+	it('converts volume to an increasing peak gain', () => {
+		expect(getTonePeakGain(0)).toBe(0);
+		expect(getTonePeakGain(0.25)).toBeGreaterThan(0);
+		expect(getTonePeakGain(0.55)).toBeGreaterThan(getTonePeakGain(0.25));
+		expect(getTonePeakGain(1)).toBeGreaterThan(getTonePeakGain(0.55));
+	});
+
+	it('clamps invalid or out-of-range volume values', () => {
+		expect(getTonePeakGain(-1)).toBe(0);
+		expect(getTonePeakGain(2)).toBe(getTonePeakGain(1));
+		expect(getTonePeakGain(Number.NaN)).toBe(0);
+	});
+});
+
 describe('createTonePlayer', () => {
 	beforeEach(() => {
 		vi.stubGlobal(
@@ -90,21 +105,46 @@ describe('createTonePlayer', () => {
 
 		expect(audio.oscillator.type).toBe('sine');
 		expect(audio.frequency.setValueAtTime).toHaveBeenCalledWith(440, currentTime);
-		expect(audio.gainParam.setValueAtTime).toHaveBeenCalledWith(0.0001, currentTime);
-		expect(audio.gainParam.exponentialRampToValueAtTime).toHaveBeenNthCalledWith(
-			1,
-			0.35,
-			currentTime + 0.015
-		);
-		expect(audio.gainParam.exponentialRampToValueAtTime).toHaveBeenNthCalledWith(
-			2,
-			0.0001,
-			currentTime + 0.8
-		);
+
+		const [[initialGain, initialTime]] = audio.gainParam.setValueAtTime.mock.calls;
+		const [[peakGain, attackTime], [releaseGain, releaseTime]] =
+			audio.gainParam.exponentialRampToValueAtTime.mock.calls;
+		const [[stopTime]] = audio.oscillator.stop.mock.calls;
+
+		expect(initialGain).toBeGreaterThan(0);
+		expect(initialTime).toBe(currentTime);
+		expect(peakGain).toBe(getTonePeakGain(1));
+		expect(attackTime).toBeGreaterThan(currentTime);
+		expect(attackTime).toBeLessThan(releaseTime);
+		expect(releaseGain).toBe(initialGain);
+		expect(releaseTime).toBe(stopTime);
 		expect(audio.oscillator.connect).toHaveBeenCalledWith(audio.gain);
 		expect(audio.gain.connect).toHaveBeenCalledWith(audio.context.destination);
 		expect(audio.oscillator.start).toHaveBeenCalledWith(currentTime);
-		expect(audio.oscillator.stop).toHaveBeenCalledWith(currentTime + 0.8);
+		expect(stopTime).toBeGreaterThan(attackTime);
+	});
+
+	it('uses the requested volume when scheduling a tone', async () => {
+		const audio = createAudioContextMock();
+		vi.mocked(AudioContext).mockImplementation(function AudioContextMock() {
+			return audio.context as unknown as AudioContext;
+		});
+		const player = createTonePlayer();
+
+		await player.play(440, 0.25);
+
+		const [[peakGain, attackTime]] = audio.gainParam.exponentialRampToValueAtTime.mock.calls;
+
+		expect(peakGain).toBe(getTonePeakGain(0.25));
+		expect(attackTime).toBeGreaterThan(currentTime);
+	});
+
+	it('does not create an audio context when muted', async () => {
+		const player = createTonePlayer();
+
+		await player.play(440, 0);
+
+		expect(AudioContext).not.toHaveBeenCalled();
 	});
 
 	it('resumes a suspended context before playing', async () => {

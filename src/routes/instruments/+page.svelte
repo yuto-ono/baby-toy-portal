@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { PageNavigation } from '$lib';
 	import OctaveKeyboard from './OctaveKeyboard.svelte';
+	import VolumeControl from './VolumeControl.svelte';
+
+	let volume = $state(0.55);
 </script>
 
 <svelte:head>
@@ -12,8 +15,12 @@
 </svelte:head>
 
 <main>
-	<PageNavigation title="楽器で あそぼう" />
-	<OctaveKeyboard />
+	{#snippet volumeAction()}
+		<VolumeControl bind:value={volume} />
+	{/snippet}
+
+	<PageNavigation title="楽器で あそぼう" actions={volumeAction} />
+	<OctaveKeyboard {volume} />
 </main>
 
 <style lang="scss">
