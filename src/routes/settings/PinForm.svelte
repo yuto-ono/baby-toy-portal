@@ -68,11 +68,16 @@
 		}
 
 		isSubmitting = true;
-		await onSave(newPin);
-		isSubmitting = false;
-		newPin = '';
-		confirmation = '';
-		successMessage = isSetup ? '' : '保護者PINを変更しました。';
+		try {
+			await onSave(newPin);
+			newPin = '';
+			confirmation = '';
+			successMessage = isSetup ? '' : '保護者PINを変更しました。';
+		} catch {
+			errorMessage = 'PINを保存できませんでした。時間をおいてもう一度お試しください。';
+		} finally {
+			isSubmitting = false;
+		}
 	}
 </script>
 
