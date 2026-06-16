@@ -49,12 +49,17 @@
 		}
 
 		isSubmitting = true;
-		const authenticated = await onAuthenticate(pin);
-		isSubmitting = false;
+		try {
+			const authenticated = await onAuthenticate(pin);
 
-		if (!authenticated) {
-			pin = '';
-			errorMessage = 'PINが違います。もう一度入力してください。';
+			if (!authenticated) {
+				pin = '';
+				errorMessage = 'PINが違います。もう一度入力してください。';
+			}
+		} catch {
+			errorMessage = 'PINを確認できませんでした。時間をおいてもう一度お試しください。';
+		} finally {
+			isSubmitting = false;
 		}
 	}
 </script>
