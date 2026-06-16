@@ -2,9 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import ParentPinGate from './ParentPinGate.svelte';
 	import PinForm from './PinForm.svelte';
+	import SettingsDialogShell from './SettingsDialogShell.svelte';
 	import { createPinCredential, verifyPin, type PinCredential } from './pinCredential';
 	import { loadPinCredential, savePinCredential } from './pinStorage';
 
@@ -52,31 +52,14 @@
 {:else if viewState === 'locked'}
 	<ParentPinGate onAuthenticate={authenticate} />
 {:else if viewState === 'setup'}
-	<main class="setup-page">
-		<button
-			class="backdrop"
-			type="button"
-			tabindex="-1"
-			aria-label="設定を閉じて戻る"
-			onclick={returnHome}
-		></button>
-
-		<a class="home-link" href={resolve('/')}>
-			<ArrowLeft size={26} strokeWidth={3} aria-hidden="true" />
-			<span>戻る</span>
-		</a>
-
-		<div class="setup-dialog" role="dialog" aria-modal="true" aria-labelledby="pin-form-title">
-			<PinForm mode="setup" onSave={setupPin} />
-		</div>
-	</main>
+	<SettingsDialogShell labelledBy="pin-form-title" variant="setup" onClose={returnHome}>
+		<PinForm mode="setup" onSave={setupPin} />
+	</SettingsDialogShell>
 {/if}
 
 <style lang="scss">
 	$ink: #333145;
 	$page-background: #fff8e7;
-	$accent-yellow: #ffe272;
-	$accent-mint: #67c7bf;
 
 	:global(*) {
 		box-sizing: border-box;
@@ -87,81 +70,5 @@
 		background: $page-background;
 		color: $ink;
 		font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-	}
-
-	.setup-page {
-		position: relative;
-		display: flex;
-		min-height: 100dvh;
-		align-items: center;
-		flex-direction: column;
-		padding: 1rem;
-		background:
-			linear-gradient(rgba($ink, 0.55), rgba($ink, 0.55)),
-			radial-gradient(circle at 10% 14%, #ffd86f 0 4.5rem, transparent 4.6rem),
-			radial-gradient(circle at 90% 86%, #8edbd3 0 6rem, transparent 6.1rem), $page-background;
-	}
-
-	.backdrop {
-		position: absolute;
-		z-index: 0;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		cursor: pointer;
-	}
-
-	.home-link {
-		position: relative;
-		z-index: 1;
-		display: inline-flex;
-		align-self: flex-start;
-		align-items: center;
-		gap: 0.4rem;
-		min-height: 3rem;
-		padding: 0.65rem 1rem;
-		border: 2px solid $ink;
-		border-radius: 999px;
-		background: $accent-yellow;
-		color: inherit;
-		font-weight: 800;
-		text-decoration: none;
-
-		&:focus-visible {
-			outline: 4px solid $accent-mint;
-			outline-offset: 3px;
-		}
-	}
-
-	.setup-dialog {
-		position: relative;
-		z-index: 1;
-		width: min(100%, 34rem);
-		margin: auto 0;
-	}
-
-	.setup-dialog :global(section) {
-		width: 100%;
-		margin: 0;
-		box-shadow: 8px 8px 0 #ff8d8d;
-	}
-
-	@media (orientation: landscape) and (min-width: 44rem) {
-		.setup-page {
-			padding: 0.75rem;
-		}
-
-		.home-link {
-			position: absolute;
-			top: 0.75rem;
-			left: 0.75rem;
-		}
-
-		.setup-dialog {
-			width: min(calc(100% - 2rem), 48rem);
-		}
 	}
 </style>
