@@ -3,7 +3,8 @@ import { createTonePlayer } from './tonePlayer';
 
 const currentTime = 10;
 
-function createAudioContextMock(state: AudioContextState = 'running') {
+function createAudioContextMock(initialState: AudioContextState = 'running') {
+	let state = initialState;
 	const frequency = {
 		setValueAtTime: vi.fn()
 	};
@@ -23,16 +24,31 @@ function createAudioContextMock(state: AudioContextState = 'running') {
 		stop: vi.fn()
 	};
 	const context = {
-		state,
+		get state() {
+			return state;
+		},
 		currentTime,
 		destination: {},
 		createOscillator: vi.fn(() => oscillator),
 		createGain: vi.fn(() => gain),
-		resume: vi.fn(() => Promise.resolve()),
-		close: vi.fn(() => Promise.resolve())
+		resume: vi.fn(async () => {
+			state = 'running';
+		}),
+		close: vi.fn(async () => {
+			state = 'closed';
+		})
 	};
 
-	return { context, oscillator, gain, frequency, gainParam };
+	return {
+		context,
+		oscillator,
+		gain,
+		frequency,
+		gainParam,
+		setState(nextState: AudioContextState) {
+			state = nextState;
+		}
+	};
 }
 
 describe('createTonePlayer', () => {
@@ -47,7 +63,7 @@ describe('createTonePlayer', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('lazily creates and reuses an audio context', () => {
+	it('lazily creates and reuses an audio context', async () => {
 		const first = createAudioContextMock();
 		vi.mocked(AudioContext).mockImplementation(function AudioContextMock() {
 			return first.context as unknown as AudioContext;
@@ -56,21 +72,21 @@ describe('createTonePlayer', () => {
 
 		expect(AudioContext).not.toHaveBeenCalled();
 
-		player.play(440);
-		player.play(880);
+		await player.play(440);
+		await player.play(880);
 
 		expect(AudioContext).toHaveBeenCalledTimes(1);
 		expect(first.context.createOscillator).toHaveBeenCalledTimes(2);
 	});
 
-	it('schedules a sine tone with a short attack and release', () => {
+	it('schedules a sine tone with a short attack and release', async () => {
 		const audio = createAudioContextMock();
 		vi.mocked(AudioContext).mockImplementation(function AudioContextMock() {
 			return audio.context as unknown as AudioContext;
 		});
 		const player = createTonePlayer();
 
-		player.play(440);
+		await player.play(440);
 
 		expect(audio.oscillator.type).toBe('sine');
 		expect(audio.frequency.setValueAtTime).toHaveBeenCalledWith(440, currentTime);
@@ -91,19 +107,69 @@ describe('createTonePlayer', () => {
 		expect(audio.oscillator.stop).toHaveBeenCalledWith(currentTime + 0.8);
 	});
 
-	it('resumes a suspended context before playing', () => {
+	it('resumes a suspended context before playing', async () => {
 		const audio = createAudioContextMock('suspended');
 		vi.mocked(AudioContext).mockImplementation(function AudioContextMock() {
 			return audio.context as unknown as AudioContext;
 		});
 		const player = createTonePlayer();
 
-		player.play(440);
+		await player.play(440);
 
 		expect(audio.context.resume).toHaveBeenCalledOnce();
+		expect(audio.frequency.setValueAtTime).toHaveBeenCalledWith(440, currentTime);
 	});
 
-	it('closes the context and creates a fresh one after destroy', () => {
+	it('waits for a suspended context to resume before scheduling a tone', async () => {
+		let resolveResume: (() => void) | undefined;
+		const audio = createAudioContextMock('suspended');
+		audio.context.resume.mockImplementationOnce(
+			() =>
+				new Promise<void>((resolve) => {
+					resolveResume = () => {
+						audio.setState('running');
+						resolve();
+					};
+				})
+		);
+		vi.mocked(AudioContext).mockImplementation(function AudioContextMock() {
+			return audio.context as unknown as AudioContext;
+		});
+		const player = createTonePlayer();
+
+		const playPromise = player.play(440);
+
+		expect(audio.context.resume).toHaveBeenCalledOnce();
+		expect(audio.context.createOscillator).not.toHaveBeenCalled();
+
+		resolveResume?.();
+		await playPromise;
+
+		expect(audio.context.createOscillator).toHaveBeenCalledOnce();
+		expect(audio.frequency.setValueAtTime).toHaveBeenCalledWith(440, currentTime);
+	});
+
+	it('recreates the context when resuming fails', async () => {
+		const first = createAudioContextMock('suspended');
+		const second = createAudioContextMock();
+		first.context.resume.mockRejectedValueOnce(new Error('Could not resume audio'));
+		vi.mocked(AudioContext)
+			.mockImplementationOnce(function AudioContextMock() {
+				return first.context as unknown as AudioContext;
+			})
+			.mockImplementationOnce(function AudioContextMock() {
+				return second.context as unknown as AudioContext;
+			});
+		const player = createTonePlayer();
+
+		await player.play(880);
+
+		expect(first.context.close).toHaveBeenCalledOnce();
+		expect(AudioContext).toHaveBeenCalledTimes(2);
+		expect(second.frequency.setValueAtTime).toHaveBeenCalledWith(880, currentTime);
+	});
+
+	it('closes the context and creates a fresh one after destroy', async () => {
 		const first = createAudioContextMock();
 		const second = createAudioContextMock();
 		vi.mocked(AudioContext)
@@ -115,9 +181,9 @@ describe('createTonePlayer', () => {
 			});
 		const player = createTonePlayer();
 
-		player.play(440);
+		await player.play(440);
 		player.destroy();
-		player.play(880);
+		await player.play(880);
 
 		expect(first.context.close).toHaveBeenCalledOnce();
 		expect(AudioContext).toHaveBeenCalledTimes(2);
