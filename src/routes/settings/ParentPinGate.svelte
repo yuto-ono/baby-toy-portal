@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import LockKeyhole from '@lucide/svelte/icons/lock-keyhole';
 	import PinKeypad from './PinKeypad.svelte';
+	import SettingsDialogShell from './SettingsDialogShell.svelte';
 	import { pinInputActionFromKey, updatePin, type PinInputAction } from './pinInput';
 	import { MAX_PIN_LENGTH, isValidPin } from './pinCredential';
 
@@ -66,125 +66,46 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<main>
-	<button
-		class="backdrop"
-		type="button"
-		tabindex="-1"
-		aria-label="設定を閉じて戻る"
-		onclick={returnHome}
-	></button>
-
-	<a class="home-link" href={resolve('/')}>
-		<ArrowLeft size={26} strokeWidth={3} aria-hidden="true" />
-		<span>戻る</span>
-	</a>
-
-	<div class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-		<div class="intro">
-			<div class="icon" aria-hidden="true">
-				<LockKeyhole size={44} strokeWidth={2.5} />
-			</div>
-			<p class="eyebrow">おとなのかたへ</p>
-			<h1 id="gate-title">保護者設定</h1>
-			<p class="description">設定を開くには、保護者PINを入力してください。</p>
+<SettingsDialogShell labelledBy="gate-title" variant="gate" onClose={returnHome}>
+	<div class="intro">
+		<div class="icon" aria-hidden="true">
+			<LockKeyhole size={44} strokeWidth={2.5} />
 		</div>
-
-		<form onsubmit={submit}>
-			<input
-				id="parent-pin"
-				type="password"
-				inputmode="none"
-				autocomplete="off"
-				readonly
-				bind:value={pin}
-				aria-describedby="pin-hint pin-error"
-			/>
-			<p id="pin-hint" class="hint">画面の数字ボタンで入力してください。</p>
-			<PinKeypad
-				label="保護者PINの数字入力"
-				disabled={isSubmitting}
-				onDigit={(digit) => applyPinAction({ type: 'append', digit })}
-				onBackspace={() => applyPinAction({ type: 'backspace' })}
-				onClear={() => applyPinAction({ type: 'clear' })}
-			/>
-			<p id="pin-error" class="error" aria-live="polite">{errorMessage}</p>
-
-			<button type="submit" disabled={isSubmitting}>
-				{isSubmitting ? '確認しています…' : '設定を開く'}
-			</button>
-		</form>
+		<p class="eyebrow">おとなのかたへ</p>
+		<h1 id="gate-title">保護者設定</h1>
+		<p class="description">設定を開くには、保護者PINを入力してください。</p>
 	</div>
-</main>
+
+	<form onsubmit={submit}>
+		<input
+			id="parent-pin"
+			type="password"
+			inputmode="none"
+			autocomplete="off"
+			readonly
+			bind:value={pin}
+			aria-describedby="pin-hint pin-error"
+		/>
+		<p id="pin-hint" class="hint">画面の数字ボタンで入力してください。</p>
+		<PinKeypad
+			label="保護者PINの数字入力"
+			disabled={isSubmitting}
+			onDigit={(digit) => applyPinAction({ type: 'append', digit })}
+			onBackspace={() => applyPinAction({ type: 'backspace' })}
+			onClear={() => applyPinAction({ type: 'clear' })}
+		/>
+		<p id="pin-error" class="error" aria-live="polite">{errorMessage}</p>
+
+		<button type="submit" disabled={isSubmitting}>
+			{isSubmitting ? '確認しています…' : '設定を開く'}
+		</button>
+	</form>
+</SettingsDialogShell>
 
 <style lang="scss">
 	$ink: #333145;
-	$page-background: #fff8e7;
-	$accent-pink: #ff8d8d;
 	$accent-yellow: #ffe272;
 	$accent-mint: #67c7bf;
-
-	main {
-		position: relative;
-		display: flex;
-		min-height: 100dvh;
-		align-items: center;
-		flex-direction: column;
-		padding: 1rem;
-		background:
-			linear-gradient(rgba($ink, 0.55), rgba($ink, 0.55)),
-			radial-gradient(circle at 10% 14%, #ffd86f 0 4.5rem, transparent 4.6rem),
-			radial-gradient(circle at 90% 86%, #8edbd3 0 6rem, transparent 6.1rem), $page-background;
-	}
-
-	.backdrop {
-		position: absolute;
-		z-index: 0;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		cursor: pointer;
-	}
-
-	.home-link {
-		position: relative;
-		z-index: 1;
-		display: inline-flex;
-		align-self: flex-start;
-		align-items: center;
-		gap: 0.4rem;
-		min-height: 3rem;
-		padding: 0.65rem 1rem;
-		border: 2px solid $ink;
-		border-radius: 999px;
-		background: $accent-yellow;
-		color: inherit;
-		font-weight: 800;
-		text-decoration: none;
-		cursor: pointer;
-
-		&:focus-visible {
-			outline: 4px solid $accent-mint;
-			outline-offset: 3px;
-		}
-	}
-
-	.gate {
-		position: relative;
-		z-index: 1;
-		width: min(100%, 28rem);
-		margin: auto 0;
-		padding: clamp(1.5rem, 6vw, 2.5rem);
-		border: 3px solid $ink;
-		border-radius: 2rem;
-		background: #fff;
-		text-align: center;
-		box-shadow: 8px 8px 0 $accent-pink;
-		cursor: auto;
-	}
 
 	.icon {
 		display: grid;
@@ -278,25 +199,6 @@
 	}
 
 	@media (orientation: landscape) and (min-width: 44rem) {
-		main {
-			padding: 0.75rem;
-		}
-
-		.home-link {
-			position: absolute;
-			top: 0.75rem;
-			left: 0.75rem;
-		}
-
-		.gate {
-			display: grid;
-			width: min(calc(100% - 2rem), 46rem);
-			padding: 1.5rem 2rem;
-			grid-template-columns: minmax(13rem, 0.8fr) minmax(19rem, 1.2fr);
-			align-items: center;
-			gap: 1.5rem;
-		}
-
 		.icon {
 			width: 4rem;
 			height: 4rem;
