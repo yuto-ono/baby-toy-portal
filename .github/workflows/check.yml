@@ -14,6 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
+      - name: Check tool versions
+        run: |
+          mise_node="$(sed -n 's/^node = "\(.*\)"$/\1/p' mise.toml)"
+          mise_pnpm="$(sed -n 's/^pnpm = "\(.*\)"$/\1/p' mise.toml)"
+          package_node="$(jq -r '.engines.node' package.json)"
+          package_pnpm="$(jq -r '.packageManager | sub("^pnpm@"; "")' package.json)"
+
+          test "$mise_node" = "$package_node"
+          test "$mise_pnpm" = "$package_pnpm"
+
       - name: Set up tools
         uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
         with:
