@@ -103,6 +103,7 @@
 		onlostpointercapture={finishPointer}
 	>
 		{#each notes as note, index (note.frequency)}
+			<!-- NOTE: 音名は視覚表示せず、色と音で自由に遊ぶ体験を優先する。支援技術向けの音名は aria-label で提供する。 -->
 			<button
 				type="button"
 				class:active={activeNotes.includes(index)}
