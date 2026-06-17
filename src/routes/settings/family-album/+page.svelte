@@ -6,7 +6,9 @@
 		deleteFamilyAlbumPhoto,
 		getFamilyAlbumPhotoNameFromFileName,
 		listFamilyAlbumPhotos,
+		normalizeFamilyAlbumPhotoName,
 		reorderFamilyAlbumPhotos,
+		reorderFamilyAlbumPhotoRecords,
 		updateFamilyAlbumPhotoName,
 		type FamilyAlbumPhoto,
 		type FamilyAlbumPhotoId
@@ -25,6 +27,7 @@
 	let loadState = $state<LoadState>('loading');
 	let isWorking = $state(false);
 	let errorMessage = $state('');
+	let canRetryReload = $state(false);
 
 	const isBusy = $derived(loadState === 'loading' || isWorking);
 	const statusMessage = $derived.by(() => {
@@ -41,6 +44,7 @@
 	async function loadPhotos(): Promise<void> {
 		loadState = 'loading';
 		errorMessage = '';
+		canRetryReload = false;
 
 		try {
 			photos = await listFamilyAlbumPhotos();
@@ -64,6 +68,7 @@
 
 		isWorking = true;
 		errorMessage = '';
+		canRetryReload = false;
 
 		try {
 			for (const file of selectedFiles) {
@@ -90,12 +95,24 @@
 	async function renamePhoto(id: FamilyAlbumPhotoId, name: string): Promise<void> {
 		isWorking = true;
 		errorMessage = '';
+		canRetryReload = false;
 
 		try {
-			await updateFamilyAlbumPhotoName(id, name);
-			photos = await listFamilyAlbumPhotos();
-		} catch {
-			errorMessage = '写真の名前を保存できませんでした。';
+			const saved = await savePhotoChange(
+				() => updateFamilyAlbumPhotoName(id, name),
+				'写真の名前を保存できませんでした。'
+			);
+
+			if (!saved) return;
+
+			photos = photos.map((photo) =>
+				photo.id === id
+					? { ...photo, name: normalizeFamilyAlbumPhotoName(name, photo.name) }
+					: photo
+			);
+			await reloadPhotosAfterSuccessfulSave(
+				'写真の名前を保存しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
+			);
 		} finally {
 			isWorking = false;
 		}
@@ -115,12 +132,20 @@
 
 		isWorking = true;
 		errorMessage = '';
+		canRetryReload = false;
 
 		try {
-			await reorderFamilyAlbumPhotos(orderedIds);
-			photos = await listFamilyAlbumPhotos();
-		} catch {
-			errorMessage = '写真の並び順を保存できませんでした。';
+			const saved = await savePhotoChange(
+				() => reorderFamilyAlbumPhotos(orderedIds),
+				'写真の並び順を保存できませんでした。'
+			);
+
+			if (!saved) return;
+
+			photos = reorderFamilyAlbumPhotoRecords(photos, orderedIds);
+			await reloadPhotosAfterSuccessfulSave(
+				'写真の並び順を保存しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
+			);
 		} finally {
 			isWorking = false;
 		}
@@ -134,17 +159,54 @@
 
 		isWorking = true;
 		errorMessage = '';
+		canRetryReload = false;
 
 		try {
-			await deleteFamilyAlbumPhoto(id);
-			photos = await listFamilyAlbumPhotos();
-		} catch {
-			errorMessage = '写真を削除できませんでした。';
+			const saved = await savePhotoChange(
+				() => deleteFamilyAlbumPhoto(id),
+				'写真を削除できませんでした。'
+			);
+
+			if (!saved) return;
+
+			photos = photos.filter((currentPhoto) => currentPhoto.id !== id);
+			await reloadPhotosAfterSuccessfulSave(
+				'写真を削除しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
+			);
 		} finally {
 			isWorking = false;
 		}
 	}
+
+	async function savePhotoChange(save: () => Promise<void>, saveErrorMessage: string) {
+		try {
+			await save();
+			return true;
+		} catch {
+			errorMessage = saveErrorMessage;
+			return false;
+		}
+	}
+
+	async function reloadPhotosAfterSuccessfulSave(reloadErrorMessage: string): Promise<void> {
+		try {
+			photos = await listFamilyAlbumPhotos();
+			loadState = 'ready';
+			canRetryReload = false;
+		} catch {
+			loadState = 'ready';
+			errorMessage = reloadErrorMessage;
+			canRetryReload = true;
+		}
+	}
 </script>
+
+{#snippet reloadButton(className = '')}
+	<button class={className} type="button" disabled={isBusy} onclick={loadPhotos}>
+		<RotateCcw size={20} strokeWidth={2.8} aria-hidden="true" />
+		<span>もう一度読み込む</span>
+	</button>
+{/snippet}
 
 <svelte:head>
 	<title>家族アルバム | Baby Toy Portal</title>
@@ -175,16 +237,22 @@
 			</label>
 		</section>
 
-		<p class="status" aria-live="polite">{statusMessage}</p>
+		{#if statusMessage || canRetryReload}
+			<div class="status-row" aria-live="polite">
+				{#if statusMessage}
+					<p class="status">{statusMessage}</p>
+				{/if}
+				{#if canRetryReload}
+					{@render reloadButton('retry-button')}
+				{/if}
+			</div>
+		{/if}
 
 		{#if loadState === 'error'}
 			<section class="empty-state" aria-labelledby="family-album-error-title">
 				<h2 id="family-album-error-title">読み込めませんでした</h2>
 				<p>写真の保存状態を確認できませんでした。</p>
-				<button type="button" onclick={loadPhotos}>
-					<RotateCcw size={22} strokeWidth={2.8} aria-hidden="true" />
-					<span>もう一度読み込む</span>
-				</button>
+				{@render reloadButton()}
 			</section>
 		{:else if loadState === 'ready' && photos.length === 0}
 			<section class="empty-state" aria-labelledby="family-album-empty-title">
@@ -307,15 +375,48 @@
 		outline-offset: 3px;
 	}
 
-	.status {
+	.status-row {
+		display: flex;
 		min-height: 1.4em;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.8rem;
 		margin: 1rem 0;
+	}
+
+	.status {
+		margin: 0;
 		color: $muted;
 		font-weight: 800;
 		line-height: 1.4;
+	}
 
-		&:empty {
-			display: none;
+	.retry-button {
+		display: inline-flex;
+		min-height: 2.8rem;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		padding: 0.5rem 0.85rem;
+		border: 2px solid $ink;
+		border-radius: 999px;
+		background: #fff;
+		color: $ink;
+		font: inherit;
+		font-size: 0.95rem;
+		font-weight: 800;
+		white-space: nowrap;
+		cursor: pointer;
+
+		&:disabled {
+			cursor: wait;
+			opacity: 0.6;
+		}
+
+		&:focus-visible {
+			outline: 4px solid $accent-yellow;
+			outline-offset: 3px;
 		}
 	}
 
@@ -354,6 +455,15 @@
 		}
 
 		.upload-button {
+			width: 100%;
+		}
+
+		.status-row {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.retry-button {
 			width: 100%;
 		}
 	}
