@@ -5,11 +5,14 @@ const PHOTO_ORDER_INDEX_NAME = 'by-display-order';
 const PHOTO_MAX_SIDE_PX = 1600;
 const PHOTO_JPEG_QUALITY = 0.88;
 const REORDER_START = 0;
+const DEFAULT_PHOTO_NAME = '家族の写真';
+export const FAMILY_ALBUM_PHOTO_NAME_MAX_LENGTH = 40;
 
 export type FamilyAlbumPhotoId = string;
 
 export type FamilyAlbumPhoto = {
 	id: FamilyAlbumPhotoId;
+	name: string;
 	image: Blob;
 	mimeType: string;
 	width: number;
@@ -45,6 +48,24 @@ type LoadedImage = {
 	height: number;
 	close(): void;
 };
+
+type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'name'> & { name?: string };
+
+export function normalizeFamilyAlbumPhotoName(name: string, fallback = DEFAULT_PHOTO_NAME) {
+	const normalizedName = name.trim().replace(/\s+/g, ' ');
+
+	if (!normalizedName) {
+		return fallback;
+	}
+
+	return normalizedName.slice(0, FAMILY_ALBUM_PHOTO_NAME_MAX_LENGTH);
+}
+
+export function getFamilyAlbumPhotoNameFromFileName(fileName: string) {
+	const nameWithoutExtension = fileName.replace(/\.[^.]+$/, '');
+
+	return normalizeFamilyAlbumPhotoName(nameWithoutExtension);
+}
 
 export function getFamilyAlbumResizeDimensions(
 	width: number,
@@ -109,10 +130,11 @@ export function createFamilyAlbumPhotoRepository({
 	createId = createFamilyAlbumPhotoId,
 	now = Date.now
 }: FamilyAlbumPhotoRepositoryOptions) {
-	async function addPhoto(source: Blob) {
+	async function addPhoto(source: Blob, name = DEFAULT_PHOTO_NAME) {
 		const [preparedImage, photos] = await Promise.all([prepareImage(source), storage.list()]);
 		const photo: FamilyAlbumPhoto = {
 			id: createId(),
+			name: normalizeFamilyAlbumPhotoName(name),
 			image: preparedImage.image,
 			mimeType: preparedImage.mimeType,
 			width: preparedImage.width,
@@ -126,7 +148,7 @@ export function createFamilyAlbumPhotoRepository({
 	}
 
 	async function listPhotos() {
-		return sortFamilyAlbumPhotos(await storage.list());
+		return sortFamilyAlbumPhotos((await storage.list()).map(normalizeFamilyAlbumPhotoRecord));
 	}
 
 	async function reorderPhotos(orderedIds: readonly FamilyAlbumPhotoId[]) {
@@ -134,11 +156,22 @@ export function createFamilyAlbumPhotoRepository({
 		await storage.putAll(reorderFamilyAlbumPhotoRecords(photos, orderedIds));
 	}
 
+	async function updatePhotoName(id: FamilyAlbumPhotoId, name: string) {
+		const photos = await storage.list();
+		const photo = photos.find((currentPhoto) => currentPhoto.id === id);
+
+		if (!photo) {
+			throw new Error('Photo was not found.');
+		}
+
+		await storage.putAll([{ ...photo, name: normalizeFamilyAlbumPhotoName(name, photo.name) }]);
+	}
+
 	async function deletePhoto(id: FamilyAlbumPhotoId) {
 		await storage.delete(id);
 	}
 
-	return { addPhoto, listPhotos, reorderPhotos, deletePhoto };
+	return { addPhoto, listPhotos, reorderPhotos, updatePhotoName, deletePhoto };
 }
 
 export function createIndexedDbFamilyAlbumPhotoStorage(
@@ -194,10 +227,16 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 		list() {
 			return withStore('readonly', async (store) => {
 				if (store.indexNames.contains(PHOTO_ORDER_INDEX_NAME)) {
-					return requestToPromise<FamilyAlbumPhoto[]>(store.index(PHOTO_ORDER_INDEX_NAME).getAll());
+					const photos = await requestToPromise<StoredFamilyAlbumPhoto[]>(
+						store.index(PHOTO_ORDER_INDEX_NAME).getAll()
+					);
+
+					return photos.map(normalizeFamilyAlbumPhotoRecord);
 				}
 
-				return requestToPromise<FamilyAlbumPhoto[]>(store.getAll());
+				const photos = await requestToPromise<StoredFamilyAlbumPhoto[]>(store.getAll());
+
+				return photos.map(normalizeFamilyAlbumPhotoRecord);
 			});
 		},
 		putAll(photos) {
@@ -253,6 +292,10 @@ export function addFamilyAlbumPhoto(source: Blob) {
 	return getFamilyAlbumPhotoRepository().addPhoto(source);
 }
 
+export function addNamedFamilyAlbumPhoto(source: Blob, name: string) {
+	return getFamilyAlbumPhotoRepository().addPhoto(source, name);
+}
+
 export function listFamilyAlbumPhotos() {
 	return getFamilyAlbumPhotoRepository().listPhotos();
 }
@@ -261,8 +304,19 @@ export function reorderFamilyAlbumPhotos(orderedIds: readonly FamilyAlbumPhotoId
 	return getFamilyAlbumPhotoRepository().reorderPhotos(orderedIds);
 }
 
+export function updateFamilyAlbumPhotoName(id: FamilyAlbumPhotoId, name: string) {
+	return getFamilyAlbumPhotoRepository().updatePhotoName(id, name);
+}
+
 export function deleteFamilyAlbumPhoto(id: FamilyAlbumPhotoId) {
 	return getFamilyAlbumPhotoRepository().deletePhoto(id);
+}
+
+function normalizeFamilyAlbumPhotoRecord(photo: StoredFamilyAlbumPhoto): FamilyAlbumPhoto {
+	return {
+		...photo,
+		name: normalizeFamilyAlbumPhotoName(photo.name ?? DEFAULT_PHOTO_NAME)
+	};
 }
 
 function sortFamilyAlbumPhotos(photos: readonly FamilyAlbumPhoto[]) {

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+	FAMILY_ALBUM_PHOTO_NAME_MAX_LENGTH,
 	createFamilyAlbumPhotoRepository,
+	getFamilyAlbumPhotoNameFromFileName,
 	getFamilyAlbumResizeDimensions,
+	normalizeFamilyAlbumPhotoName,
 	reorderFamilyAlbumPhotoRecords,
 	type FamilyAlbumPhoto
 } from './familyAlbumPhotos';
@@ -34,6 +37,7 @@ function createPhotoStorageMock(initialPhotos: readonly FamilyAlbumPhoto[] = [])
 function createPhoto(id: string, order: number, createdAt = order): FamilyAlbumPhoto {
 	return {
 		id,
+		name: `photo ${id}`,
 		image: new Blob([id], { type: 'image/jpeg' }),
 		mimeType: 'image/jpeg',
 		width: 1200,
@@ -42,6 +46,23 @@ function createPhoto(id: string, order: number, createdAt = order): FamilyAlbumP
 		createdAt
 	};
 }
+
+describe('normalizeFamilyAlbumPhotoName', () => {
+	it('trims blank space and limits the stored name length', () => {
+		expect(normalizeFamilyAlbumPhotoName('  おでかけ   写真  ')).toBe('おでかけ 写真');
+		expect(normalizeFamilyAlbumPhotoName('')).toBe('家族の写真');
+		expect(normalizeFamilyAlbumPhotoName('a'.repeat(80))).toHaveLength(
+			FAMILY_ALBUM_PHOTO_NAME_MAX_LENGTH
+		);
+	});
+});
+
+describe('getFamilyAlbumPhotoNameFromFileName', () => {
+	it('uses the file name without its extension as the default photo name', () => {
+		expect(getFamilyAlbumPhotoNameFromFileName('birthday-party.jpg')).toBe('birthday-party');
+		expect(getFamilyAlbumPhotoNameFromFileName('家族.png')).toBe('家族');
+	});
+});
 
 describe('getFamilyAlbumResizeDimensions', () => {
 	it('keeps images within the maximum side while preserving aspect ratio', () => {
@@ -103,6 +124,7 @@ describe('createFamilyAlbumPhotoRepository', () => {
 
 		expect(addedPhoto).toMatchObject({
 			id: 'new-photo',
+			name: '家族の写真',
 			image: resized,
 			mimeType: 'image/jpeg',
 			width: 1600,
@@ -111,6 +133,24 @@ describe('createFamilyAlbumPhotoRepository', () => {
 			createdAt: 1234
 		});
 		expect(await photos()).toHaveLength(2);
+	});
+
+	it('adds a photo with a normalized name', async () => {
+		const { storage } = createPhotoStorageMock();
+		const repository = createFamilyAlbumPhotoRepository({
+			storage,
+			createId: () => 'new-photo',
+			prepareImage: async () => ({
+				image: new Blob(),
+				mimeType: 'image/jpeg',
+				width: 1,
+				height: 1
+			})
+		});
+
+		const addedPhoto = await repository.addPhoto(new Blob(), '  おでかけ   写真  ');
+
+		expect(addedPhoto.name).toBe('おでかけ 写真');
 	});
 
 	it('lists photos by display order and creation time', async () => {
@@ -134,6 +174,23 @@ describe('createFamilyAlbumPhotoRepository', () => {
 			'earlier',
 			'later'
 		]);
+	});
+
+	it('updates a photo name', async () => {
+		const { storage } = createPhotoStorageMock([createPhoto('a', 0)]);
+		const repository = createFamilyAlbumPhotoRepository({
+			storage,
+			prepareImage: async () => ({
+				image: new Blob(),
+				mimeType: 'image/jpeg',
+				width: 1,
+				height: 1
+			})
+		});
+
+		await repository.updatePhotoName('a', '  新しい   名前  ');
+
+		expect((await repository.listPhotos())[0].name).toBe('新しい 名前');
 	});
 
 	it('updates photo order and deletes photos', async () => {

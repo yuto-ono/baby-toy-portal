@@ -95,7 +95,7 @@
 
 	section {
 		width: 100%;
-		margin: 0 0 1.5rem;
+		margin: 0;
 		padding: 1rem 1.25rem;
 		border: 3px solid $ink;
 		border-radius: 1.5rem;

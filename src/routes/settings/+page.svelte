@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { PageNavigation } from '$lib';
 	import AppUpdatePanel from './AppUpdatePanel.svelte';
+	import FamilyAlbumSettingsLink from './FamilyAlbumSettingsLink.svelte';
 	import PinSettingsLink from './PinSettingsLink.svelte';
 </script>
 
@@ -14,6 +15,7 @@
 	<PageNavigation title="保護者設定" />
 	<div class="settings-list">
 		<AppUpdatePanel />
+		<FamilyAlbumSettingsLink />
 		<PinSettingsLink />
 	</div>
 </main>
@@ -30,7 +32,9 @@
 	}
 
 	.settings-list {
+		display: grid;
 		width: min(calc(100% - 3rem), 34rem);
 		margin: clamp(2rem, 7vw, 3.5rem) auto;
+		gap: 1.5rem;
 	}
 </style>
