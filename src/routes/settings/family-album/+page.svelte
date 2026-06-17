@@ -147,7 +147,6 @@
 
 <svelte:head>
 	<title>家族アルバム | Baby Toy Portal</title>
-	<meta name="theme-color" content="#fff8e7" />
 	<meta name="description" content="家族アルバムに表示する写真を管理します。" />
 </svelte:head>
 

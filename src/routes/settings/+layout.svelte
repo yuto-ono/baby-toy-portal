@@ -45,6 +45,10 @@
 	}
 </script>
 
+<svelte:head>
+	<meta name="theme-color" content="#fff" />
+</svelte:head>
+
 <svelte:window onkeydown={handleKeydown} />
 
 {#if viewState === 'authenticated'}
