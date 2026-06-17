@@ -328,7 +328,7 @@ async function serializeFamilyAlbumPhotoRecord(
 
 	return {
 		...storedPhoto,
-		imageData: await image.arrayBuffer(),
+		imageData: await blobToArrayBuffer(image),
 		name
 	};
 }
@@ -364,10 +364,40 @@ async function createStoredFamilyAlbumPhotoBlob(photo: StoredFamilyAlbumPhoto, m
 	}
 
 	if (photo.image) {
-		return new Blob([await photo.image.arrayBuffer()], { type: mimeType });
+		try {
+			return new Blob([await blobToArrayBuffer(photo.image)], { type: mimeType });
+		} catch {
+			return photo.image;
+		}
 	}
 
 	throw new Error('Stored photo image is missing.');
+}
+
+function blobToArrayBuffer(blob: Blob) {
+	if (typeof blob.arrayBuffer === 'function') {
+		return blob.arrayBuffer();
+	}
+
+	if (typeof FileReader === 'undefined') {
+		throw new Error('Blob reading is not available.');
+	}
+
+	return new Promise<ArrayBuffer>((resolve, reject) => {
+		const reader = new FileReader();
+
+		reader.onload = () => {
+			if (reader.result instanceof ArrayBuffer) {
+				resolve(reader.result);
+				return;
+			}
+
+			reject(new Error('Could not read image data.'));
+		};
+		reader.onerror = () => reject(reader.error ?? new Error('Could not read image data.'));
+		reader.onabort = () => reject(new Error('Image data reading was aborted.'));
+		reader.readAsArrayBuffer(blob);
+	});
 }
 
 function sortFamilyAlbumPhotos(photos: readonly FamilyAlbumPhoto[]) {
