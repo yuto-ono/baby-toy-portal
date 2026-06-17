@@ -56,19 +56,3 @@
 		<PinForm mode="setup" onSave={setupPin} />
 	</SettingsDialogShell>
 {/if}
-
-<style lang="scss">
-	$ink: #333145;
-	$page-background: #fff8e7;
-
-	:global(*) {
-		box-sizing: border-box;
-	}
-
-	:global(body) {
-		margin: 0;
-		background: $page-background;
-		color: $ink;
-		font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-	}
-</style>
