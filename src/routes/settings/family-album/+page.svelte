@@ -14,8 +14,8 @@
 		type FamilyAlbumPhotoId
 	} from '$lib/family-album/familyAlbumPhotos';
 	import ImagePlus from '@lucide/svelte/icons/image-plus';
-	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import FamilyAlbumPhotoCard from './FamilyAlbumPhotoCard.svelte';
+	import FamilyAlbumReloadButton from './FamilyAlbumReloadButton.svelte';
 	import {
 		moveFamilyAlbumPhotoId,
 		type FamilyAlbumPhotoMoveDirection
@@ -201,13 +201,6 @@
 	}
 </script>
 
-{#snippet reloadButton(className = '')}
-	<button class={className} type="button" disabled={isBusy} onclick={loadPhotos}>
-		<RotateCcw size={20} strokeWidth={2.8} aria-hidden="true" />
-		<span>もう一度読み込む</span>
-	</button>
-{/snippet}
-
 <svelte:head>
 	<title>家族アルバム | Baby Toy Portal</title>
 	<meta name="description" content="家族アルバムに表示する写真を管理します。" />
@@ -243,7 +236,7 @@
 					<p class="status">{statusMessage}</p>
 				{/if}
 				{#if canRetryReload}
-					{@render reloadButton('retry-button')}
+					<FamilyAlbumReloadButton compact disabled={isBusy} onReload={loadPhotos} />
 				{/if}
 			</div>
 		{/if}
@@ -252,7 +245,7 @@
 			<section class="empty-state" aria-labelledby="family-album-error-title">
 				<h2 id="family-album-error-title">読み込めませんでした</h2>
 				<p>写真の保存状態を確認できませんでした。</p>
-				{@render reloadButton()}
+				<FamilyAlbumReloadButton disabled={isBusy} onReload={loadPhotos} />
 			</section>
 		{:else if loadState === 'ready' && photos.length === 0}
 			<section class="empty-state" aria-labelledby="family-album-empty-title">
@@ -339,8 +332,7 @@
 		white-space: nowrap;
 	}
 
-	.upload-button,
-	.empty-state button {
+	.upload-button {
 		display: inline-flex;
 		min-height: 3.4rem;
 		align-items: center;
@@ -364,8 +356,7 @@
 		}
 	}
 
-	.upload-button.disabled,
-	.empty-state button:disabled {
+	.upload-button.disabled {
 		cursor: wait;
 		opacity: 0.6;
 	}
@@ -391,35 +382,6 @@
 		line-height: 1.4;
 	}
 
-	.retry-button {
-		display: inline-flex;
-		min-height: 2.8rem;
-		flex: 0 0 auto;
-		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-		padding: 0.5rem 0.85rem;
-		border: 2px solid $ink;
-		border-radius: 999px;
-		background: #fff;
-		color: $ink;
-		font: inherit;
-		font-size: 0.95rem;
-		font-weight: 800;
-		white-space: nowrap;
-		cursor: pointer;
-
-		&:disabled {
-			cursor: wait;
-			opacity: 0.6;
-		}
-
-		&:focus-visible {
-			outline: 4px solid $accent-yellow;
-			outline-offset: 3px;
-		}
-	}
-
 	.empty-state {
 		margin-top: 1.5rem;
 		padding: clamp(1.5rem, 5vw, 2.5rem);
@@ -431,10 +393,6 @@
 			color: $muted;
 			font-weight: 700;
 			line-height: 1.6;
-		}
-
-		button {
-			margin-top: 1.25rem;
 		}
 	}
 
@@ -461,10 +419,6 @@
 		.status-row {
 			align-items: stretch;
 			flex-direction: column;
-		}
-
-		.retry-button {
-			width: 100%;
 		}
 	}
 </style>
