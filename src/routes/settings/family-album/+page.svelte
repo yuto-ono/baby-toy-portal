@@ -320,6 +320,7 @@
 	}
 
 	.empty-state {
+		margin-top: 1.5rem;
 		padding: clamp(1.5rem, 5vw, 2.5rem);
 		text-align: center;
 		box-shadow: 6px 6px 0 $accent-yellow;
