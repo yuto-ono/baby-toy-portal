@@ -9,6 +9,7 @@
 
 <svelte:head>
 	<title>{message} | Baby Toy Portal</title>
+	<meta name="theme-color" content="#fff8e7" />
 	<meta name="robots" content="noindex" />
 </svelte:head>
 

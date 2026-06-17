@@ -16,6 +16,10 @@
 	} = $props();
 </script>
 
+<svelte:head>
+	<meta name="theme-color" content="#fff8e7" />
+</svelte:head>
+
 <main>
 	<button
 		class="backdrop"
