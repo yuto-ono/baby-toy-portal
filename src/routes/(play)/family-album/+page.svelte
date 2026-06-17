@@ -9,7 +9,7 @@
 	import FamilyAlbumTapEffects from './FamilyAlbumTapEffects.svelte';
 	import FamilyAlbumViewer from './FamilyAlbumViewer.svelte';
 
-	const TAP_LOCK_MS = 450;
+	const TAP_LOCK_MS = 1000;
 
 	type LoadState = 'loading' | 'ready' | 'error';
 

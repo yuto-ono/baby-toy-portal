@@ -43,8 +43,8 @@
 </button>
 
 <style lang="scss">
-	$ink: #333145;
 	$album-background: #fff8e7;
+	$photo-enter-duration: 500ms;
 
 	.viewer {
 		position: relative;
@@ -53,8 +53,7 @@
 		height: 100%;
 		min-height: 0;
 		place-items: center;
-		padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-			max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+		padding: 0;
 		border: 0;
 		background:
 			radial-gradient(circle at 14% 18%, #ffd86f 0 5rem, transparent 5.1rem),
@@ -81,23 +80,21 @@
 		display: block;
 		width: 100%;
 		height: 100%;
-		border: clamp(0.35rem, 1vw, 0.55rem) solid #fff;
-		border-radius: clamp(1.25rem, 4vw, 2.5rem);
-		background: #fff;
-		box-shadow:
-			0 0 0 3px $ink,
-			0 1rem 2rem rgba($ink, 0.22);
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
 		object-fit: contain;
 		pointer-events: none;
 		user-select: none;
-		animation: photo-enter 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+		animation: photo-enter $photo-enter-duration ease-in-out both;
 		-webkit-user-drag: none;
 	}
 
 	@keyframes photo-enter {
 		from {
 			opacity: 0;
-			transform: scale(0.975);
+			transform: scale(0.985);
 		}
 
 		to {
