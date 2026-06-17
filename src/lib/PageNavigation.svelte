@@ -32,6 +32,7 @@
 
 <style lang="scss">
 	$ink: #333145;
+	$navigation-background: #fff;
 	$accent-yellow: #ffe272;
 	$accent-mint: #67c7bf;
 
@@ -42,7 +43,7 @@
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		gap: clamp(1rem, 4vw, 2rem);
 		padding: 0.8rem clamp(1rem, 4vw, 1.5rem);
-		background: #fff;
+		background: $navigation-background;
 		box-shadow: 0 4px 12px rgba($ink, 0.12);
 	}
 

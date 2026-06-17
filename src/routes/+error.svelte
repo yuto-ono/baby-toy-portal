@@ -32,17 +32,6 @@
 	$accent-pink: #ff8d8d;
 	$accent-mint: #67c7bf;
 
-	:global(*) {
-		box-sizing: border-box;
-	}
-
-	:global(body) {
-		margin: 0;
-		background: $page-background;
-		color: $ink;
-		font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-	}
-
 	main {
 		display: grid;
 		min-height: 100dvh;
