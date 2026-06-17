@@ -38,6 +38,8 @@
 		color: inherit;
 		text-align: center;
 		text-decoration: none;
+		user-select: none;
+		-webkit-user-select: none;
 		box-shadow: 10px 10px 0 $accent-pink;
 		transition:
 			transform 120ms ease,
