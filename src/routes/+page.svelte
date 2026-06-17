@@ -97,8 +97,9 @@
 
 	nav {
 		display: grid;
-		width: min(100%, 28rem);
+		width: min(100%, 58rem);
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
 		margin-top: clamp(2.5rem, 8vw, 4rem);
-		gap: 1.5rem;
+		gap: clamp(1.25rem, 3vw, 2rem);
 	}
 </style>
