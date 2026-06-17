@@ -7,6 +7,8 @@ export type PinCredential = {
 	digest: string;
 };
 
+const SALT_BYTE_LENGTH = 16;
+const SHA_256_DIGEST_BYTE_LENGTH = 32;
 const encoder = new TextEncoder();
 
 export function isValidPin(pin: string): boolean {
@@ -17,12 +19,22 @@ export function isPinCredential(value: unknown): value is PinCredential {
 	if (typeof value !== 'object' || value === null) return false;
 
 	const credential = value as Record<string, unknown>;
+	if (
+		credential.version !== 1 ||
+		typeof credential.salt !== 'string' ||
+		typeof credential.digest !== 'string'
+	) {
+		return false;
+	}
+
+	const salt = base64ToBytes(credential.salt);
+	const digest = base64ToBytes(credential.digest);
+
 	return (
-		credential.version === 1 &&
-		typeof credential.salt === 'string' &&
-		credential.salt.length > 0 &&
-		typeof credential.digest === 'string' &&
-		credential.digest.length > 0
+		salt !== null &&
+		salt.length === SALT_BYTE_LENGTH &&
+		digest !== null &&
+		digest.length === SHA_256_DIGEST_BYTE_LENGTH
 	);
 }
 
@@ -31,7 +43,7 @@ export async function createPinCredential(pin: string): Promise<PinCredential> {
 		throw new Error('PIN must contain 4 to 8 digits.');
 	}
 
-	const salt = crypto.getRandomValues(new Uint8Array(16));
+	const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTE_LENGTH));
 	const digest = await digestPin(pin, salt);
 
 	return {
@@ -46,6 +58,15 @@ export async function verifyPin(pin: string, credential: PinCredential): Promise
 
 	const salt = base64ToBytes(credential.salt);
 	const expectedDigest = base64ToBytes(credential.digest);
+	if (
+		salt === null ||
+		expectedDigest === null ||
+		salt.length !== SALT_BYTE_LENGTH ||
+		expectedDigest.length !== SHA_256_DIGEST_BYTE_LENGTH
+	) {
+		return false;
+	}
+
 	const actualDigest = await digestPin(pin, salt);
 
 	return constantTimeEqual(actualDigest, expectedDigest);
@@ -81,6 +102,11 @@ function bytesToBase64(bytes: Uint8Array): string {
 	return btoa(binary);
 }
 
-function base64ToBytes(value: string): Uint8Array {
-	return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+function base64ToBytes(value: string): Uint8Array | null {
+	try {
+		const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+		return bytesToBase64(bytes) === value ? bytes : null;
+	} catch {
+		return null;
+	}
 }

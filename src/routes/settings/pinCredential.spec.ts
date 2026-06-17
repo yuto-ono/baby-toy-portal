@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createPinCredential, isPinCredential, isValidPin, verifyPin } from './pinCredential';
 
+function base64Bytes(byteLength: number): string {
+	return btoa(String.fromCharCode(...new Uint8Array(byteLength).fill(1)));
+}
+
 describe('isValidPin', () => {
 	it.each(['0000', '123456', '12345678'])('accepts a 4 to 8 digit PIN: %s', (pin) => {
 		expect(isValidPin(pin)).toBe(true);
@@ -33,19 +37,32 @@ describe('PIN credentials', () => {
 	it('rejects invalid PINs before hashing', async () => {
 		await expect(createPinCredential('123')).rejects.toThrow();
 	});
+
+	it('returns false for malformed credentials instead of throwing', async () => {
+		const credential = { version: 1, salt: 'not-base64!', digest: base64Bytes(32) } as const;
+
+		await expect(verifyPin('1234', credential)).resolves.toBe(false);
+	});
 });
 
 describe('isPinCredential', () => {
 	it('accepts the current storage format', () => {
-		expect(isPinCredential({ version: 1, salt: 'salt', digest: 'digest' })).toBe(true);
+		expect(isPinCredential({ version: 1, salt: base64Bytes(16), digest: base64Bytes(32) })).toBe(
+			true
+		);
 	});
 
 	it.each([
 		null,
 		{},
-		{ version: 2, salt: 'salt', digest: 'digest' },
-		{ version: 1, salt: '', digest: 'digest' },
-		{ version: 1, salt: 'salt' }
+		{ version: 2, salt: base64Bytes(16), digest: base64Bytes(32) },
+		{ version: 1, salt: '', digest: base64Bytes(32) },
+		{ version: 1, salt: base64Bytes(16) },
+		{ version: 1, salt: 'not-base64!', digest: base64Bytes(32) },
+		{ version: 1, salt: base64Bytes(16), digest: 'not-base64!' },
+		{ version: 1, salt: `${base64Bytes(16)}\n`, digest: base64Bytes(32) },
+		{ version: 1, salt: base64Bytes(15), digest: base64Bytes(32) },
+		{ version: 1, salt: base64Bytes(16), digest: base64Bytes(31) }
 	])('rejects malformed stored data', (value) => {
 		expect(isPinCredential(value)).toBe(false);
 	});

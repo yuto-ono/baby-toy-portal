@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadPinCredential, savePinCredential } from './pinStorage';
 
+function base64Bytes(byteLength: number): string {
+	return btoa(String.fromCharCode(...new Uint8Array(byteLength).fill(1)));
+}
+
 const credential = {
 	version: 1 as const,
-	salt: 'salt',
-	digest: 'digest'
+	salt: base64Bytes(16),
+	digest: base64Bytes(32)
 };
 
 describe('PIN credential storage', () => {
