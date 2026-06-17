@@ -71,6 +71,7 @@
 			}
 
 			photos = await listFamilyAlbumPhotos();
+			loadState = 'ready';
 		} catch {
 			try {
 				photos = await listFamilyAlbumPhotos();
