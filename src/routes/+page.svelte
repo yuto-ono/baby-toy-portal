@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Settings from '@lucide/svelte/icons/settings';
+	import Images from '@lucide/svelte/icons/images';
 	import Music from '@lucide/svelte/icons/music';
 	import PlayCard from './PlayCard.svelte';
 </script>
@@ -26,7 +27,12 @@
 			<Music size={52} strokeWidth={2.75} />
 		{/snippet}
 
+		{#snippet albumIcon()}
+			<Images size={52} strokeWidth={2.75} />
+		{/snippet}
+
 		<PlayCard href="/(play)/instruments" label="楽器で あそぼう" icon={musicIcon} />
+		<PlayCard href="/(play)/family-album" label="アルバムを 見よう" icon={albumIcon} />
 	</nav>
 </main>
 
@@ -90,7 +96,9 @@
 	}
 
 	nav {
+		display: grid;
 		width: min(100%, 28rem);
 		margin-top: clamp(2.5rem, 8vw, 4rem);
+		gap: 1.5rem;
 	}
 </style>
