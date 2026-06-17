@@ -3,6 +3,7 @@ const DATABASE_VERSION = 1;
 const PHOTO_STORE_NAME = 'photos';
 const PHOTO_ORDER_INDEX_NAME = 'by-display-order';
 const PHOTO_MAX_SIDE_PX = 1600;
+const PHOTO_MIME_TYPE = 'image/jpeg';
 const PHOTO_JPEG_QUALITY = 0.88;
 const REORDER_START = 0;
 const DEFAULT_PHOTO_NAME = '家族の写真';
@@ -49,7 +50,11 @@ type LoadedImage = {
 	close(): void;
 };
 
-type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'name'> & { name?: string };
+type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & {
+	image?: Blob;
+	imageData?: ArrayBuffer;
+	name?: string;
+};
 
 export function normalizeFamilyAlbumPhotoName(name: string, fallback = DEFAULT_PHOTO_NAME) {
 	const normalizedName = name.trim().replace(/\s+/g, ' ');
@@ -148,7 +153,7 @@ export function createFamilyAlbumPhotoRepository({
 	}
 
 	async function listPhotos() {
-		return sortFamilyAlbumPhotos((await storage.list()).map(normalizeFamilyAlbumPhotoRecord));
+		return sortFamilyAlbumPhotos(await storage.list());
 	}
 
 	async function reorderPhotos(orderedIds: readonly FamilyAlbumPhotoId[]) {
@@ -219,9 +224,11 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 	}
 
 	return {
-		add(photo) {
+		async add(photo) {
+			const storedPhoto = await serializeFamilyAlbumPhotoRecord(photo);
+
 			return withStore('readwrite', async (store) => {
-				await requestToPromise(store.add(photo));
+				await requestToPromise(store.add(storedPhoto));
 			});
 		},
 		list() {
@@ -231,17 +238,19 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 						store.index(PHOTO_ORDER_INDEX_NAME).getAll()
 					);
 
-					return photos.map(normalizeFamilyAlbumPhotoRecord);
+					return normalizeFamilyAlbumPhotoRecords(photos);
 				}
 
 				const photos = await requestToPromise<StoredFamilyAlbumPhoto[]>(store.getAll());
 
-				return photos.map(normalizeFamilyAlbumPhotoRecord);
+				return normalizeFamilyAlbumPhotoRecords(photos);
 			});
 		},
-		putAll(photos) {
+		async putAll(photos) {
+			const storedPhotos = await Promise.all(photos.map(serializeFamilyAlbumPhotoRecord));
+
 			return withStore('readwrite', (store) => {
-				for (const photo of photos) {
+				for (const photo of storedPhotos) {
 					store.put(photo);
 				}
 			});
@@ -267,8 +276,8 @@ export async function prepareFamilyAlbumPhotoImage(
 		context.drawImage(loadedImage.source, 0, 0, dimensions.width, dimensions.height);
 
 		return {
-			image: await canvasToBlob(canvas, 'image/jpeg', PHOTO_JPEG_QUALITY),
-			mimeType: 'image/jpeg',
+			image: await canvasToBlob(canvas, PHOTO_MIME_TYPE, PHOTO_JPEG_QUALITY),
+			mimeType: PHOTO_MIME_TYPE,
 			width: dimensions.width,
 			height: dimensions.height
 		};
@@ -312,11 +321,53 @@ export function deleteFamilyAlbumPhoto(id: FamilyAlbumPhotoId) {
 	return getFamilyAlbumPhotoRepository().deletePhoto(id);
 }
 
-function normalizeFamilyAlbumPhotoRecord(photo: StoredFamilyAlbumPhoto): FamilyAlbumPhoto {
+async function serializeFamilyAlbumPhotoRecord(
+	photo: FamilyAlbumPhoto
+): Promise<StoredFamilyAlbumPhoto> {
+	const { image, name, ...storedPhoto } = photo;
+
 	return {
-		...photo,
-		name: normalizeFamilyAlbumPhotoName(photo.name ?? DEFAULT_PHOTO_NAME)
+		...storedPhoto,
+		imageData: await image.arrayBuffer(),
+		name
 	};
+}
+
+function normalizeFamilyAlbumPhotoRecords(photos: readonly StoredFamilyAlbumPhoto[]) {
+	return Promise.all(photos.map(normalizeFamilyAlbumPhotoRecord));
+}
+
+async function normalizeFamilyAlbumPhotoRecord(
+	photo: StoredFamilyAlbumPhoto
+): Promise<FamilyAlbumPhoto> {
+	const mimeType = getStoredFamilyAlbumPhotoMimeType(photo);
+
+	return {
+		id: photo.id,
+		name: normalizeFamilyAlbumPhotoName(photo.name ?? DEFAULT_PHOTO_NAME),
+		image: await createStoredFamilyAlbumPhotoBlob(photo, mimeType),
+		mimeType,
+		width: photo.width,
+		height: photo.height,
+		order: photo.order,
+		createdAt: photo.createdAt
+	};
+}
+
+function getStoredFamilyAlbumPhotoMimeType(photo: StoredFamilyAlbumPhoto) {
+	return photo.mimeType || photo.image?.type || PHOTO_MIME_TYPE;
+}
+
+async function createStoredFamilyAlbumPhotoBlob(photo: StoredFamilyAlbumPhoto, mimeType: string) {
+	if (photo.imageData) {
+		return new Blob([photo.imageData], { type: mimeType });
+	}
+
+	if (photo.image) {
+		return new Blob([await photo.image.arrayBuffer()], { type: mimeType });
+	}
+
+	throw new Error('Stored photo image is missing.');
 }
 
 function sortFamilyAlbumPhotos(photos: readonly FamilyAlbumPhoto[]) {
