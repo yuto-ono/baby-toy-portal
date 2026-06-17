@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadPinCredential, savePinCredential } from './pinStorage';
 
+function base64Bytes(byteLength: number): string {
+	return btoa(String.fromCharCode(...new Uint8Array(byteLength).fill(1)));
+}
+
 const credential = {
 	version: 1 as const,
-	salt: 'salt',
-	digest: 'digest'
+	salt: base64Bytes(16),
+	digest: base64Bytes(32)
 };
 
 describe('PIN credential storage', () => {
@@ -41,6 +45,14 @@ describe('PIN credential storage', () => {
 		}
 	);
 
+	it('treats storage read errors as unconfigured', () => {
+		getItem.mockImplementationOnce(() => {
+			throw new Error('Storage is unavailable.');
+		});
+
+		expect(loadPinCredential()).toBeNull();
+	});
+
 	it('saves a credential as JSON', () => {
 		savePinCredential(credential);
 
@@ -48,5 +60,13 @@ describe('PIN credential storage', () => {
 			'baby-toy-portal:parent-pin:v1',
 			JSON.stringify(credential)
 		);
+	});
+
+	it('reports storage write errors as save failures', () => {
+		setItem.mockImplementationOnce(() => {
+			throw new Error('Storage quota exceeded.');
+		});
+
+		expect(() => savePinCredential(credential)).toThrow('Could not save PIN credential.');
 	});
 });
