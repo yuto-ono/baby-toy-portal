@@ -26,6 +26,7 @@
 		"@sveltejs/vite-plugin-svelte": "7.1.2",
 		"@types/node": "25.9.3",
 		"@vitest/browser-playwright": "4.1.8",
+		"esbuild": "0.28.1",
 		"eslint": "10.5.0",
 		"eslint-config-prettier": "10.1.8",
 		"eslint-plugin-svelte": "3.19.0",
