@@ -12,6 +12,7 @@
 
 <svelte:head>
 	<title>保護者PIN | Baby Toy Portal</title>
+	<meta name="theme-color" content="#fff" />
 	<meta name="description" content="Baby Toy Portalの保護者PINを変更します。" />
 </svelte:head>
 

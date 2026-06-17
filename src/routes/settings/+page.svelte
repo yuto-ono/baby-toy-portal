@@ -6,6 +6,7 @@
 
 <svelte:head>
 	<title>保護者設定 | Baby Toy Portal</title>
+	<meta name="theme-color" content="#fff" />
 	<meta name="description" content="Baby Toy Portalの保護者向け設定画面です。" />
 </svelte:head>
 

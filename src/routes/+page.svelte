@@ -7,6 +7,7 @@
 
 <svelte:head>
 	<title>Baby Toy Portal</title>
+	<meta name="theme-color" content="#fff8e7" />
 	<meta name="description" content="子どもが楽しく遊べる、やさしいおもちゃのポータルです。" />
 </svelte:head>
 
@@ -25,7 +26,7 @@
 			<Music size={52} strokeWidth={2.75} />
 		{/snippet}
 
-		<PlayCard href="/instruments" label="楽器で あそぼう" icon={musicIcon} />
+		<PlayCard href="/(play)/instruments" label="楽器で あそぼう" icon={musicIcon} />
 	</nav>
 </main>
 
