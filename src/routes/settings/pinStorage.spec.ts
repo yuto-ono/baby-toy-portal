@@ -45,6 +45,14 @@ describe('PIN credential storage', () => {
 		}
 	);
 
+	it('treats storage read errors as unconfigured', () => {
+		getItem.mockImplementationOnce(() => {
+			throw new Error('Storage is unavailable.');
+		});
+
+		expect(loadPinCredential()).toBeNull();
+	});
+
 	it('saves a credential as JSON', () => {
 		savePinCredential(credential);
 
@@ -52,5 +60,13 @@ describe('PIN credential storage', () => {
 			'baby-toy-portal:parent-pin:v1',
 			JSON.stringify(credential)
 		);
+	});
+
+	it('reports storage write errors as save failures', () => {
+		setItem.mockImplementationOnce(() => {
+			throw new Error('Storage quota exceeded.');
+		});
+
+		expect(() => savePinCredential(credential)).toThrow('Could not save PIN credential.');
 	});
 });
