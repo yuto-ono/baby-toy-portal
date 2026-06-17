@@ -35,7 +35,11 @@
 >
 	{#if imageSource?.photoId === photo.id}
 		{#key photo.id}
-			<img class="photo-image" src={imageSource.url} alt="" draggable="false" />
+			<div
+				class="photo-image"
+				style={`background-image: url("${imageSource.url}")`}
+				aria-hidden="true"
+			></div>
 		{/key}
 	{/if}
 
@@ -77,18 +81,20 @@
 	.photo-image {
 		position: relative;
 		z-index: 1;
-		display: block;
 		width: 100%;
 		height: 100%;
+		min-width: 0;
+		min-height: 0;
 		border: 0;
 		border-radius: 0;
 		background: transparent;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-size: contain;
 		box-shadow: none;
-		object-fit: contain;
 		pointer-events: none;
 		user-select: none;
 		animation: photo-enter $photo-enter-duration ease-in-out both;
-		-webkit-user-drag: none;
 	}
 
 	@keyframes photo-enter {
