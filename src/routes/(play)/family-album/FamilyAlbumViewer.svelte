@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { FamilyAlbumPhoto } from '$lib/family-album/familyAlbumPhotos';
+	import FamilyAlbumTapEffects from './FamilyAlbumTapEffects.svelte';
 
 	let {
 		photo,
@@ -11,11 +12,12 @@
 		onNext: () => void;
 	} = $props();
 
-	let imageUrl = $state('');
+	let viewerElement = $state<HTMLButtonElement>();
+	let imageSource = $state<{ photoId: string; url: string }>();
 
 	$effect(() => {
 		const url = URL.createObjectURL(photo.image);
-		imageUrl = url;
+		imageSource = { photoId: photo.id, url };
 
 		return () => {
 			URL.revokeObjectURL(url);
@@ -24,15 +26,20 @@
 </script>
 
 <button
+	bind:this={viewerElement}
 	class="viewer"
 	class:locked={isLocked}
 	type="button"
 	aria-label="次の写真を見る"
 	onclick={onNext}
 >
-	{#if imageUrl}
-		<img src={imageUrl} alt="" draggable="false" />
+	{#if imageSource?.photoId === photo.id}
+		{#key photo.id}
+			<img class="photo-image" src={imageSource.url} alt="" draggable="false" />
+		{/key}
 	{/if}
+
+	<FamilyAlbumTapEffects target={viewerElement} />
 </button>
 
 <style lang="scss">
@@ -40,6 +47,7 @@
 	$album-background: #fff8e7;
 
 	.viewer {
+		position: relative;
 		display: grid;
 		width: 100%;
 		height: 100%;
@@ -53,7 +61,9 @@
 			radial-gradient(circle at 88% 82%, #8edbd3 0 6rem, transparent 6.1rem),
 			linear-gradient(135deg, #fffef6, $album-background);
 		cursor: pointer;
+		overflow: hidden;
 		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 
 		&:focus-visible {
 			outline: 6px solid #67c7bf;
@@ -65,7 +75,9 @@
 		cursor: wait;
 	}
 
-	img {
+	.photo-image {
+		position: relative;
+		z-index: 1;
 		display: block;
 		width: 100%;
 		height: 100%;
@@ -78,6 +90,36 @@
 		object-fit: contain;
 		pointer-events: none;
 		user-select: none;
+		animation: photo-enter 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 		-webkit-user-drag: none;
+	}
+
+	@keyframes photo-enter {
+		from {
+			opacity: 0;
+			transform: scale(0.975);
+		}
+
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.photo-image {
+			animation-duration: 180ms;
+			animation-name: photo-fade;
+		}
+	}
+
+	@keyframes photo-fade {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
 	}
 </style>

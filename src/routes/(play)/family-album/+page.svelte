@@ -6,6 +6,7 @@
 		listFamilyAlbumPhotos,
 		type FamilyAlbumPhoto
 	} from '$lib/family-album/familyAlbumPhotos';
+	import FamilyAlbumTapEffects from './FamilyAlbumTapEffects.svelte';
 	import FamilyAlbumViewer from './FamilyAlbumViewer.svelte';
 
 	const TAP_LOCK_MS = 450;
@@ -16,6 +17,7 @@
 	let currentPhotoIndex = $state(0);
 	let loadState = $state<LoadState>('loading');
 	let isTapLocked = $state(false);
+	let emptyStateElement = $state<HTMLElement>();
 	let lockTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
 	const currentPhoto = $derived(photos[currentPhotoIndex]);
@@ -89,9 +91,14 @@
 			>
 		</button>
 	{:else if photos.length === 0}
-		<section class="message-state" aria-labelledby="family-album-empty-title">
+		<section
+			bind:this={emptyStateElement}
+			class="message-state effect-state"
+			aria-labelledby="family-album-empty-title"
+		>
 			<p class="child-message" id="family-album-empty-title">しゃしんを 入れてね</p>
 			<p class="parent-message">保護者設定の家族アルバムから、表示したい写真を追加できます。</p>
+			<FamilyAlbumTapEffects target={emptyStateElement} />
 		</section>
 	{:else if currentPhoto}
 		<FamilyAlbumViewer photo={currentPhoto} isLocked={isTapLocked} onNext={showNextPhoto} />
@@ -128,6 +135,7 @@
 	}
 
 	.message-state {
+		position: relative;
 		display: grid;
 		width: 100%;
 		height: 100%;
@@ -143,6 +151,12 @@
 		color: inherit;
 		font: inherit;
 		text-align: center;
+	}
+
+	.effect-state {
+		cursor: pointer;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.retry-state {
