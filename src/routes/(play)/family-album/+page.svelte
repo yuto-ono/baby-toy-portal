@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-	import { PageNavigation } from '$lib';
+	import { PageNavigation, TapEffects } from '$lib';
 	import {
 		listFamilyAlbumPhotos,
 		type FamilyAlbumPhoto
 	} from '$lib/family-album/familyAlbumPhotos';
-	import FamilyAlbumTapEffects from './FamilyAlbumTapEffects.svelte';
 	import FamilyAlbumViewer from './FamilyAlbumViewer.svelte';
 
 	const TAP_LOCK_MS = 1000;
@@ -98,7 +97,7 @@
 		>
 			<p class="child-message" id="family-album-empty-title">しゃしんを 入れてね</p>
 			<p class="parent-message">保護者設定の家族アルバムから、表示したい写真を追加できます。</p>
-			<FamilyAlbumTapEffects target={emptyStateElement} />
+			<TapEffects target={emptyStateElement} />
 		</section>
 	{:else if currentPhoto}
 		<FamilyAlbumViewer photo={currentPhoto} isLocked={isTapLocked} onNext={showNextPhoto} />

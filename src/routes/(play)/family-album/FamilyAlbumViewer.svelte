@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { FamilyAlbumPhoto } from '$lib/family-album/familyAlbumPhotos';
-	import FamilyAlbumTapEffects from './FamilyAlbumTapEffects.svelte';
+	import { TapEffects } from '$lib';
 
 	let {
 		photo,
@@ -56,7 +56,7 @@
 		{/key}
 	{/if}
 
-	<FamilyAlbumTapEffects target={viewerElement} />
+	<TapEffects target={viewerElement} />
 </button>
 
 <style lang="scss">
