@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import LockKeyhole from '@lucide/svelte/icons/lock-keyhole';
+	import { onMount } from 'svelte';
 	import PinKeypad from './PinKeypad.svelte';
 	import SettingsDialogShell from './SettingsDialogShell.svelte';
 	import { pinInputActionFromKey, updatePin, type PinInputAction } from './pinInput';
@@ -16,6 +17,11 @@
 	let pin = $state('');
 	let errorMessage = $state('');
 	let isSubmitting = $state(false);
+	let pinInputElement: HTMLInputElement;
+
+	onMount(() => {
+		pinInputElement.focus();
+	});
 
 	function returnHome(): void {
 		void goto(resolve('/'));
@@ -79,6 +85,7 @@
 	<form onsubmit={submit}>
 		<input
 			id="parent-pin"
+			bind:this={pinInputElement}
 			type="password"
 			inputmode="none"
 			autocomplete="off"

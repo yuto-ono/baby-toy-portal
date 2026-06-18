@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import PinKeypad from './PinKeypad.svelte';
 	import { pinInputActionFromKey, updatePin, type PinInputAction } from './pinInput';
 	import { MAX_PIN_LENGTH, MIN_PIN_LENGTH, isValidPin } from './pinCredential';
@@ -21,6 +22,7 @@
 	let successMessage = $state('');
 	let isSubmitting = $state(false);
 	let formElement: HTMLFormElement;
+	let newPinInputElement: HTMLInputElement;
 	const activeFieldLabel = $derived(
 		activeField === 'newPin'
 			? isSetup
@@ -30,6 +32,10 @@
 				? '保護者PIN（確認）'
 				: '新しいPIN（確認）'
 	);
+
+	onMount(() => {
+		newPinInputElement.focus();
+	});
 
 	function applyPinAction(action: PinInputAction): void {
 		if (activeField === 'newPin') {
@@ -99,6 +105,7 @@
 			<label for="new-pin">{isSetup ? '保護者PIN' : '新しいPIN'}</label>
 			<input
 				id="new-pin"
+				bind:this={newPinInputElement}
 				class:active={activeField === 'newPin'}
 				type="password"
 				inputmode="none"
