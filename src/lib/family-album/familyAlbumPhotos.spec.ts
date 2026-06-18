@@ -4,9 +4,12 @@ import {
 	createFamilyAlbumPhotoRepository,
 	getFamilyAlbumPhotoNameFromFileName,
 	getFamilyAlbumResizeDimensions,
+	normalizeFamilyAlbumPhotoRecords,
+	normalizeFamilyAlbumPhotoRecordsWithIssues,
 	normalizeFamilyAlbumPhotoName,
 	reorderFamilyAlbumPhotoRecords,
-	type FamilyAlbumPhoto
+	type FamilyAlbumPhoto,
+	type StoredFamilyAlbumPhoto
 } from './familyAlbumPhotos';
 
 function createPhotoStorageMock(initialPhotos: readonly FamilyAlbumPhoto[] = []) {
@@ -44,6 +47,24 @@ function createPhoto(id: string, order: number, createdAt = order): FamilyAlbumP
 		height: 800,
 		order,
 		createdAt
+	};
+}
+
+function createStoredPhoto(
+	id: string,
+	order: number,
+	overrides: Partial<StoredFamilyAlbumPhoto> = {}
+): StoredFamilyAlbumPhoto {
+	return {
+		id,
+		name: `photo ${id}`,
+		imageData: new Uint8Array([1, 2, 3]).buffer,
+		mimeType: 'image/jpeg',
+		width: 1200,
+		height: 800,
+		order,
+		createdAt: order,
+		...overrides
 	};
 }
 
@@ -100,6 +121,36 @@ describe('reorderFamilyAlbumPhotoRecords', () => {
 		expect(() => reorderFamilyAlbumPhotoRecords(photos, ['missing'])).toThrow(
 			'Photo order contains an unknown id.'
 		);
+	});
+});
+
+describe('normalizeFamilyAlbumPhotoRecords', () => {
+	it('skips records that cannot be restored as photos', async () => {
+		const photos = await normalizeFamilyAlbumPhotoRecords([
+			createStoredPhoto('a', 0),
+			createStoredPhoto('broken', 1, { imageData: undefined }),
+			createStoredPhoto('b', 2)
+		]);
+
+		expect(photos.map((photo) => photo.id)).toEqual(['a', 'b']);
+	});
+
+	it('keeps issue details for skipped records', async () => {
+		const result = await normalizeFamilyAlbumPhotoRecordsWithIssues([
+			createStoredPhoto('a', 0),
+			createStoredPhoto('broken', 1, { imageData: undefined })
+		]);
+
+		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]).toMatchObject({ id: 'broken' });
+		expect(result.issues[0]?.error).toBeInstanceOf(Error);
+	});
+
+	it('returns an empty photo list when all records are broken', async () => {
+		await expect(
+			normalizeFamilyAlbumPhotoRecords([createStoredPhoto('broken', 0, { imageData: undefined })])
+		).resolves.toEqual([]);
 	});
 });
 
