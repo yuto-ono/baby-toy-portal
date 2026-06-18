@@ -74,18 +74,26 @@ export function createAppUpdater({
 		scheduleReload(reload, 600);
 	}
 
-	if (!serviceWorker) {
-		setStatus('unavailable');
-	} else {
-		serviceWorker.addEventListener('controllerchange', handleControllerChange);
-		void serviceWorker.getRegistration().then((currentRegistration) => {
-			registration = currentRegistration;
+	async function initializeRegistration(): Promise<void> {
+		if (!serviceWorker) return;
+
+		try {
+			registration = await serviceWorker.getRegistration();
 			if (registration?.waiting) {
 				hadControllerBeforeCheck = serviceWorker.controller !== null;
 				pendingWorker = registration.waiting;
 				setStatus('available');
 			}
-		});
+		} catch {
+			// Initial lookup is opportunistic; explicit checks report update errors.
+		}
+	}
+
+	if (!serviceWorker) {
+		setStatus('unavailable');
+	} else {
+		serviceWorker.addEventListener('controllerchange', handleControllerChange);
+		void initializeRegistration();
 	}
 
 	async function checkForUpdate(): Promise<void> {

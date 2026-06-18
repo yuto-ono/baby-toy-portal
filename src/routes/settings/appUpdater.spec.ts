@@ -3,16 +3,18 @@ import { createAppUpdater, type AppUpdateStatus } from './appUpdater';
 
 function createServiceWorkerMock({
 	hasController = true,
-	registration
+	registration,
+	getRegistration = vi.fn(async () => registration)
 }: {
 	hasController?: boolean;
 	registration?: ServiceWorkerRegistration;
+	getRegistration?: () => Promise<ServiceWorkerRegistration | undefined>;
 } = {}) {
 	const listeners = new Map<string, EventListener>();
 	const serviceWorker = {
 		controller: hasController ? ({} as ServiceWorker) : null,
 		ready: Promise.resolve(registration),
-		getRegistration: vi.fn(async () => registration),
+		getRegistration,
 		addEventListener: vi.fn((type: string, listener: EventListener) => {
 			listeners.set(type, listener);
 		}),
@@ -92,6 +94,11 @@ function createUpdater({
 	return { updater, statuses, reload, scheduleReload };
 }
 
+async function waitForInitialRegistration(): Promise<void> {
+	await Promise.resolve();
+	await Promise.resolve();
+}
+
 describe('createAppUpdater', () => {
 	it('reports unavailable when service workers are not supported', async () => {
 		const { updater, statuses } = createUpdater({ serviceWorker: undefined });
@@ -99,6 +106,23 @@ describe('createAppUpdater', () => {
 		await updater.checkForUpdate();
 
 		expect(statuses).toEqual(['unavailable']);
+	});
+
+	it('ignores initial getRegistration failures until an explicit update check', async () => {
+		const getRegistration = vi.fn(async (): Promise<ServiceWorkerRegistration | undefined> => {
+			throw new Error('Registration lookup failed');
+		});
+		const serviceWorker = createServiceWorkerMock({ getRegistration });
+		const { updater, statuses } = createUpdater({ serviceWorker: serviceWorker.serviceWorker });
+
+		await waitForInitialRegistration();
+
+		expect(statuses).toEqual([]);
+
+		await updater.checkForUpdate();
+
+		expect(statuses).toEqual(['checking', 'error']);
+		expect(getRegistration).toHaveBeenCalledTimes(2);
 	});
 
 	it('does not request an update while offline', async () => {
