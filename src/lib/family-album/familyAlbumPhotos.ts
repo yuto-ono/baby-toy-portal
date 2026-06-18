@@ -29,9 +29,29 @@ export type PreparedFamilyAlbumImage = {
 	height: number;
 };
 
+export type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & {
+	image?: Blob;
+	imageData?: ArrayBuffer;
+	name?: string;
+};
+
+export type FamilyAlbumPhotoRecordNormalizationIssueReason = 'missing-image' | 'restore-failed';
+
+export type FamilyAlbumPhotoRecordNormalizationIssue = {
+	id: FamilyAlbumPhotoId;
+	reason: FamilyAlbumPhotoRecordNormalizationIssueReason;
+	error: unknown;
+};
+
+export type FamilyAlbumPhotoRecordNormalizationResult = {
+	photos: FamilyAlbumPhoto[];
+	issues: FamilyAlbumPhotoRecordNormalizationIssue[];
+};
+
 type PhotoStorage = {
 	add(photo: FamilyAlbumPhoto): Promise<void>;
 	list(): Promise<FamilyAlbumPhoto[]>;
+	listWithIssues(): Promise<FamilyAlbumPhotoRecordNormalizationResult>;
 	putAll(photos: readonly FamilyAlbumPhoto[]): Promise<void>;
 	delete(id: FamilyAlbumPhotoId): Promise<void>;
 };
@@ -48,22 +68,6 @@ type LoadedImage = {
 	width: number;
 	height: number;
 	close(): void;
-};
-
-export type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & {
-	image?: Blob;
-	imageData?: ArrayBuffer;
-	name?: string;
-};
-
-export type FamilyAlbumPhotoRecordNormalizationIssue = {
-	id: FamilyAlbumPhotoId;
-	error: unknown;
-};
-
-export type FamilyAlbumPhotoRecordNormalizationResult = {
-	photos: FamilyAlbumPhoto[];
-	issues: FamilyAlbumPhotoRecordNormalizationIssue[];
 };
 
 export function normalizeFamilyAlbumPhotoName(name: string, fallback = DEFAULT_PHOTO_NAME) {
@@ -166,6 +170,15 @@ export function createFamilyAlbumPhotoRepository({
 		return sortFamilyAlbumPhotos(await storage.list());
 	}
 
+	async function listPhotoRecordsWithIssues() {
+		const result = await storage.listWithIssues();
+
+		return {
+			photos: sortFamilyAlbumPhotos(result.photos),
+			issues: result.issues
+		};
+	}
+
 	async function reorderPhotos(orderedIds: readonly FamilyAlbumPhotoId[]) {
 		const photos = await storage.list();
 		await storage.putAll(reorderFamilyAlbumPhotoRecords(photos, orderedIds));
@@ -186,7 +199,14 @@ export function createFamilyAlbumPhotoRepository({
 		await storage.delete(id);
 	}
 
-	return { addPhoto, listPhotos, reorderPhotos, updatePhotoName, deletePhoto };
+	return {
+		addPhoto,
+		listPhotos,
+		listPhotoRecordsWithIssues,
+		reorderPhotos,
+		updatePhotoName,
+		deletePhoto
+	};
 }
 
 export function createIndexedDbFamilyAlbumPhotoStorage(
@@ -233,6 +253,24 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 		}
 	}
 
+	async function readStoredPhotos(store: IDBObjectStore) {
+		if (store.indexNames.contains(PHOTO_ORDER_INDEX_NAME)) {
+			return requestToPromise<StoredFamilyAlbumPhoto[]>(
+				store.index(PHOTO_ORDER_INDEX_NAME).getAll()
+			);
+		}
+
+		return requestToPromise<StoredFamilyAlbumPhoto[]>(store.getAll());
+	}
+
+	async function listWithIssues() {
+		return withStore('readonly', async (store) => {
+			const photos = await readStoredPhotos(store);
+
+			return normalizeFamilyAlbumPhotoRecordsWithIssues(photos);
+		});
+	}
+
 	return {
 		async add(photo) {
 			const storedPhoto = await serializeFamilyAlbumPhotoRecord(photo);
@@ -241,21 +279,12 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 				await requestToPromise(store.add(storedPhoto));
 			});
 		},
-		list() {
-			return withStore('readonly', async (store) => {
-				if (store.indexNames.contains(PHOTO_ORDER_INDEX_NAME)) {
-					const photos = await requestToPromise<StoredFamilyAlbumPhoto[]>(
-						store.index(PHOTO_ORDER_INDEX_NAME).getAll()
-					);
+		async list() {
+			const result = await listWithIssues();
 
-					return normalizeFamilyAlbumPhotoRecords(photos);
-				}
-
-				const photos = await requestToPromise<StoredFamilyAlbumPhoto[]>(store.getAll());
-
-				return normalizeFamilyAlbumPhotoRecords(photos);
-			});
+			return result.photos;
 		},
+		listWithIssues,
 		async putAll(photos) {
 			const storedPhotos = await Promise.all(photos.map(serializeFamilyAlbumPhotoRecord));
 
@@ -319,6 +348,10 @@ export function listFamilyAlbumPhotos() {
 	return getFamilyAlbumPhotoRepository().listPhotos();
 }
 
+export function listFamilyAlbumPhotosWithIssues() {
+	return getFamilyAlbumPhotoRepository().listPhotoRecordsWithIssues();
+}
+
 export function reorderFamilyAlbumPhotos(orderedIds: readonly FamilyAlbumPhotoId[]) {
 	return getFamilyAlbumPhotoRepository().reorderPhotos(orderedIds);
 }
@@ -352,7 +385,7 @@ export async function normalizeFamilyAlbumPhotoRecords(photos: readonly StoredFa
 export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 	photos: readonly StoredFamilyAlbumPhoto[]
 ): Promise<FamilyAlbumPhotoRecordNormalizationResult> {
-	// NOTE: 壊れたレコードは自動削除せず、将来のクリーンアップ UI 用に情報を残す。
+	// NOTE: 壊れたレコードは自動削除せず、クリーンアップ UI 用に情報を残す。
 	// 一覧読み込みでは、正常に復元できた写真だけを返す。
 	const settledPhotos = await Promise.allSettled(photos.map(normalizeFamilyAlbumPhotoRecord));
 	const normalizedPhotos: FamilyAlbumPhoto[] = [];
@@ -366,6 +399,7 @@ export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 
 		issues.push({
 			id: photos[index].id,
+			reason: getFamilyAlbumPhotoRecordNormalizationIssueReason(settledPhoto.reason),
 			error: settledPhoto.reason
 		});
 	}
@@ -394,6 +428,23 @@ function getStoredFamilyAlbumPhotoMimeType(photo: StoredFamilyAlbumPhoto) {
 	return photo.mimeType || photo.image?.type || PHOTO_MIME_TYPE;
 }
 
+function getFamilyAlbumPhotoRecordNormalizationIssueReason(
+	error: unknown
+): FamilyAlbumPhotoRecordNormalizationIssueReason {
+	if (error instanceof StoredFamilyAlbumPhotoImageMissingError) {
+		return 'missing-image';
+	}
+
+	return 'restore-failed';
+}
+
+class StoredFamilyAlbumPhotoImageMissingError extends Error {
+	constructor() {
+		super('Stored photo image is missing.');
+		this.name = 'StoredFamilyAlbumPhotoImageMissingError';
+	}
+}
+
 async function createStoredFamilyAlbumPhotoBlob(photo: StoredFamilyAlbumPhoto, mimeType: string) {
 	if (photo.imageData) {
 		return new Blob([photo.imageData], { type: mimeType });
@@ -407,7 +458,7 @@ async function createStoredFamilyAlbumPhotoBlob(photo: StoredFamilyAlbumPhoto, m
 		}
 	}
 
-	throw new Error('Stored photo image is missing.');
+	throw new StoredFamilyAlbumPhotoImageMissingError();
 }
 
 function blobToArrayBuffer(blob: Blob) {

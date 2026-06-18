@@ -5,15 +5,17 @@
 		addNamedFamilyAlbumPhoto,
 		deleteFamilyAlbumPhoto,
 		getFamilyAlbumPhotoNameFromFileName,
-		listFamilyAlbumPhotos,
+		listFamilyAlbumPhotosWithIssues,
 		normalizeFamilyAlbumPhotoName,
 		reorderFamilyAlbumPhotos,
 		reorderFamilyAlbumPhotoRecords,
+		type FamilyAlbumPhotoRecordNormalizationIssue,
 		updateFamilyAlbumPhotoName,
 		type FamilyAlbumPhoto,
 		type FamilyAlbumPhotoId
 	} from '$lib/family-album/familyAlbumPhotos';
 	import ImagePlus from '@lucide/svelte/icons/image-plus';
+	import FamilyAlbumCleanupPanel from './FamilyAlbumCleanupPanel.svelte';
 	import FamilyAlbumPhotoCard from './FamilyAlbumPhotoCard.svelte';
 	import FamilyAlbumReloadButton from './FamilyAlbumReloadButton.svelte';
 	import {
@@ -24,6 +26,7 @@
 	type LoadState = 'loading' | 'ready' | 'error';
 
 	let photos = $state<FamilyAlbumPhoto[]>([]);
+	let photoRecordIssues = $state<FamilyAlbumPhotoRecordNormalizationIssue[]>([]);
 	let loadState = $state<LoadState>('loading');
 	let isWorking = $state(false);
 	let errorMessage = $state('');
@@ -47,7 +50,7 @@
 		canRetryReload = false;
 
 		try {
-			photos = await listFamilyAlbumPhotos();
+			await refreshPhotosWithIssues();
 			loadState = 'ready';
 		} catch {
 			loadState = 'error';
@@ -75,11 +78,11 @@
 				await addNamedFamilyAlbumPhoto(file, getFamilyAlbumPhotoNameFromFileName(file.name));
 			}
 
-			photos = await listFamilyAlbumPhotos();
+			await refreshPhotosWithIssues();
 			loadState = 'ready';
 		} catch {
 			try {
-				photos = await listFamilyAlbumPhotos();
+				await refreshPhotosWithIssues();
 				loadState = 'ready';
 				errorMessage = '一部の写真を追加できませんでした。画像ファイルを確認してください。';
 			} catch {
@@ -89,6 +92,51 @@
 		} finally {
 			isWorking = false;
 			input.value = '';
+		}
+	}
+
+	async function removeBrokenPhotoRecords(): Promise<void> {
+		const issuesToDelete = [...photoRecordIssues];
+
+		if (issuesToDelete.length === 0) return;
+
+		const confirmed = confirm(
+			`${issuesToDelete.length}件の壊れた写真レコードを削除しますか？正常な写真は削除されません。`
+		);
+
+		if (!confirmed) return;
+
+		isWorking = true;
+		errorMessage = '';
+		canRetryReload = false;
+
+		const deletedIds: FamilyAlbumPhotoId[] = [];
+
+		try {
+			for (const issue of issuesToDelete) {
+				await deleteFamilyAlbumPhoto(issue.id);
+				deletedIds.push(issue.id);
+			}
+
+			photoRecordIssues = photoRecordIssues.filter((issue) => !deletedIds.includes(issue.id));
+			await reloadPhotosAfterSuccessfulSave(
+				'壊れた写真レコードを削除しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
+			);
+		} catch {
+			photoRecordIssues = photoRecordIssues.filter((issue) => !deletedIds.includes(issue.id));
+
+			try {
+				await refreshPhotosWithIssues();
+				loadState = 'ready';
+				errorMessage = '一部の壊れた写真レコードを削除できませんでした。もう一度お試しください。';
+			} catch {
+				loadState = 'ready';
+				errorMessage =
+					'一部の壊れた写真レコードを削除できませんでした。最新の一覧も読み込めませんでした。もう一度読み込んで確認してください。';
+				canRetryReload = true;
+			}
+		} finally {
+			isWorking = false;
 		}
 	}
 
@@ -178,6 +226,13 @@
 		}
 	}
 
+	async function refreshPhotosWithIssues(): Promise<void> {
+		const result = await listFamilyAlbumPhotosWithIssues();
+
+		photos = result.photos;
+		photoRecordIssues = result.issues;
+	}
+
 	async function savePhotoChange(save: () => Promise<void>, saveErrorMessage: string) {
 		try {
 			await save();
@@ -190,7 +245,7 @@
 
 	async function reloadPhotosAfterSuccessfulSave(reloadErrorMessage: string): Promise<void> {
 		try {
-			photos = await listFamilyAlbumPhotos();
+			await refreshPhotosWithIssues();
 			loadState = 'ready';
 			canRetryReload = false;
 		} catch {
@@ -239,6 +294,14 @@
 					<FamilyAlbumReloadButton compact disabled={isBusy} onReload={loadPhotos} />
 				{/if}
 			</div>
+		{/if}
+
+		{#if loadState === 'ready' && photoRecordIssues.length > 0}
+			<FamilyAlbumCleanupPanel
+				issues={photoRecordIssues}
+				disabled={isBusy}
+				onCleanup={removeBrokenPhotoRecords}
+			/>
 		{/if}
 
 		{#if loadState === 'error'}

@@ -23,6 +23,9 @@ function createPhotoStorageMock(initialPhotos: readonly FamilyAlbumPhoto[] = [])
 			async list() {
 				return [...photos];
 			},
+			async listWithIssues() {
+				return { photos: [...photos], issues: [] };
+			},
 			async putAll(nextPhotos: readonly FamilyAlbumPhoto[]) {
 				const nextPhotosById = new Map(nextPhotos.map((photo) => [photo.id, photo]));
 				photos = photos.map((photo) => nextPhotosById.get(photo.id) ?? photo);
@@ -143,7 +146,7 @@ describe('normalizeFamilyAlbumPhotoRecords', () => {
 
 		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
 		expect(result.issues).toHaveLength(1);
-		expect(result.issues[0]).toMatchObject({ id: 'broken' });
+		expect(result.issues[0]).toMatchObject({ id: 'broken', reason: 'missing-image' });
 		expect(result.issues[0]?.error).toBeInstanceOf(Error);
 	});
 
@@ -224,6 +227,39 @@ describe('createFamilyAlbumPhotoRepository', () => {
 			'first',
 			'earlier',
 			'later'
+		]);
+	});
+
+	it('lists restorable photos with broken record issues', async () => {
+		const brokenRecordError = new Error('Stored photo image is missing.');
+		const repository = createFamilyAlbumPhotoRepository({
+			storage: {
+				async add() {},
+				async list() {
+					return [];
+				},
+				async listWithIssues() {
+					return {
+						photos: [createPhoto('later', 1), createPhoto('first', 0)],
+						issues: [{ id: 'broken', reason: 'restore-failed', error: brokenRecordError }]
+					};
+				},
+				async putAll() {},
+				async delete() {}
+			},
+			prepareImage: async () => ({
+				image: new Blob(),
+				mimeType: 'image/jpeg',
+				width: 1,
+				height: 1
+			})
+		});
+
+		const result = await repository.listPhotoRecordsWithIssues();
+
+		expect(result.photos.map((photo) => photo.id)).toEqual(['first', 'later']);
+		expect(result.issues).toEqual([
+			{ id: 'broken', reason: 'restore-failed', error: brokenRecordError }
 		]);
 	});
 
