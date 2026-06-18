@@ -50,10 +50,20 @@ type LoadedImage = {
 	close(): void;
 };
 
-type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & {
+export type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & {
 	image?: Blob;
 	imageData?: ArrayBuffer;
 	name?: string;
+};
+
+export type FamilyAlbumPhotoRecordNormalizationIssue = {
+	id: FamilyAlbumPhotoId;
+	error: unknown;
+};
+
+export type FamilyAlbumPhotoRecordNormalizationResult = {
+	photos: FamilyAlbumPhoto[];
+	issues: FamilyAlbumPhotoRecordNormalizationIssue[];
 };
 
 export function normalizeFamilyAlbumPhotoName(name: string, fallback = DEFAULT_PHOTO_NAME) {
@@ -333,8 +343,34 @@ async function serializeFamilyAlbumPhotoRecord(
 	};
 }
 
-function normalizeFamilyAlbumPhotoRecords(photos: readonly StoredFamilyAlbumPhoto[]) {
-	return Promise.all(photos.map(normalizeFamilyAlbumPhotoRecord));
+export async function normalizeFamilyAlbumPhotoRecords(photos: readonly StoredFamilyAlbumPhoto[]) {
+	const result = await normalizeFamilyAlbumPhotoRecordsWithIssues(photos);
+
+	return result.photos;
+}
+
+export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
+	photos: readonly StoredFamilyAlbumPhoto[]
+): Promise<FamilyAlbumPhotoRecordNormalizationResult> {
+	// NOTE: 壊れたレコードは自動削除せず、将来のクリーンアップ UI 用に情報を残す。
+	// 一覧読み込みでは、正常に復元できた写真だけを返す。
+	const settledPhotos = await Promise.allSettled(photos.map(normalizeFamilyAlbumPhotoRecord));
+	const normalizedPhotos: FamilyAlbumPhoto[] = [];
+	const issues: FamilyAlbumPhotoRecordNormalizationIssue[] = [];
+
+	for (const [index, settledPhoto] of settledPhotos.entries()) {
+		if (settledPhoto.status === 'fulfilled') {
+			normalizedPhotos.push(settledPhoto.value);
+			continue;
+		}
+
+		issues.push({
+			id: photos[index].id,
+			error: settledPhoto.reason
+		});
+	}
+
+	return { photos: normalizedPhotos, issues };
 }
 
 async function normalizeFamilyAlbumPhotoRecord(
