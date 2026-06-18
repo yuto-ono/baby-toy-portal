@@ -11,6 +11,8 @@ const SALT_BYTE_LENGTH = 16;
 const SHA_256_DIGEST_BYTE_LENGTH = 32;
 const encoder = new TextEncoder();
 
+// NOTE: このPINは、家族で共有する端末で子どもが保護者設定へ偶然入ることを防ぐためのもの。
+// salt付きSHA-256は意図した設計で、保存値流出後のオフライン総当たり耐性はスコープ外。
 export function isValidPin(pin: string): boolean {
 	return new RegExp(`^\\d{${MIN_PIN_LENGTH},${MAX_PIN_LENGTH}}$`).test(pin);
 }
