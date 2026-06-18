@@ -15,6 +15,18 @@
 	let viewerElement = $state<HTMLButtonElement>();
 	let imageSource = $state<{ photoId: string; url: string }>();
 
+	function handlePointerDown(event: PointerEvent): void {
+		if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+		onNext();
+	}
+
+	function handleClick(event: MouseEvent): void {
+		if (event.detail !== 0) return;
+
+		onNext();
+	}
+
 	$effect(() => {
 		const url = URL.createObjectURL(photo.image);
 		imageSource = { photoId: photo.id, url };
@@ -31,7 +43,8 @@
 	class:locked={isLocked}
 	type="button"
 	aria-label="次の写真を見る"
-	onclick={onNext}
+	onpointerdown={handlePointerDown}
+	onclick={handleClick}
 >
 	{#if imageSource?.photoId === photo.id}
 		{#key photo.id}
