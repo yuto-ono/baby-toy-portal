@@ -1,33 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import {
-	createFamilyAlbumTapBurst,
-	createFamilyAlbumTapParticles,
-	getFamilyAlbumTapOrigin
-} from './familyAlbumViewerEffects';
+import { createTapBurst, createTapParticles, getTapOrigin } from './tapEffects';
 
-describe('getFamilyAlbumTapOrigin', () => {
-	it('returns the tap position as percentages within the viewer bounds', () => {
-		expect(
-			getFamilyAlbumTapOrigin(110, 70, { left: 10, top: 20, width: 200, height: 100 })
-		).toEqual({
+describe('getTapOrigin', () => {
+	it('returns the tap position as percentages within the target bounds', () => {
+		expect(getTapOrigin(110, 70, { left: 10, top: 20, width: 200, height: 100 })).toEqual({
 			xPercent: 50,
 			yPercent: 50
 		});
 	});
 
-	it('clamps taps that land outside the viewer bounds', () => {
-		expect(
-			getFamilyAlbumTapOrigin(-20, 200, { left: 10, top: 20, width: 200, height: 100 })
-		).toEqual({
+	it('clamps taps that land outside the target bounds', () => {
+		expect(getTapOrigin(-20, 200, { left: 10, top: 20, width: 200, height: 100 })).toEqual({
 			xPercent: 0,
 			yPercent: 100
 		});
 	});
 });
 
-describe('createFamilyAlbumTapParticles', () => {
+describe('createTapParticles', () => {
 	it('creates a balanced burst from the same tap origin', () => {
-		const particles = createFamilyAlbumTapParticles({ xPercent: 35, yPercent: 60 }, 2);
+		const particles = createTapParticles({ xPercent: 35, yPercent: 60 }, 2);
 
 		expect(particles).toHaveLength(22);
 		expect(
@@ -61,7 +53,7 @@ describe('createFamilyAlbumTapParticles', () => {
 	});
 
 	it('uses fewer and shorter particles when reduced motion is requested', () => {
-		const particles = createFamilyAlbumTapParticles({ xPercent: 35, yPercent: 60 }, 2, {
+		const particles = createTapParticles({ xPercent: 35, yPercent: 60 }, 2, {
 			reducedMotion: true
 		});
 
@@ -71,9 +63,9 @@ describe('createFamilyAlbumTapParticles', () => {
 	});
 });
 
-describe('createFamilyAlbumTapBurst', () => {
+describe('createTapBurst', () => {
 	it('keeps a large tap marker anchored to the tap origin', () => {
-		expect(createFamilyAlbumTapBurst({ xPercent: 35, yPercent: 60 }, 4)).toEqual({
+		expect(createTapBurst({ xPercent: 35, yPercent: 60 }, 4)).toEqual({
 			id: '4',
 			xPercent: 35,
 			yPercent: 60,

@@ -5,12 +5,12 @@ const REDUCED_MOTION_PARTICLE_COUNT = 8;
 const TAP_PARTICLE_BASE_DISTANCE_PX = 216;
 const REDUCED_MOTION_PARTICLE_BASE_DISTANCE_PX = 24;
 
-export type FamilyAlbumTapOrigin = {
+export type TapOrigin = {
 	xPercent: number;
 	yPercent: number;
 };
 
-export type FamilyAlbumTapParticle = {
+export type TapParticle = {
 	id: string;
 	shape: 'circle' | 'star';
 	xPercent: number;
@@ -24,7 +24,7 @@ export type FamilyAlbumTapParticle = {
 	durationMs: number;
 };
 
-export type FamilyAlbumTapBurst = FamilyAlbumTapOrigin & {
+export type TapBurst = TapOrigin & {
 	id: string;
 	durationMs: number;
 };
@@ -35,11 +35,11 @@ type TapParticleOptions = {
 	reducedMotion?: boolean;
 };
 
-export function createFamilyAlbumTapBurst(
-	origin: FamilyAlbumTapOrigin,
+export function createTapBurst(
+	origin: TapOrigin,
 	burstId: number,
 	{ reducedMotion = false }: TapParticleOptions = {}
-): FamilyAlbumTapBurst {
+): TapBurst {
 	return {
 		id: `${burstId}`,
 		xPercent: origin.xPercent,
@@ -48,11 +48,7 @@ export function createFamilyAlbumTapBurst(
 	};
 }
 
-export function getFamilyAlbumTapOrigin(
-	clientX: number,
-	clientY: number,
-	bounds: TapBounds
-): FamilyAlbumTapOrigin {
+export function getTapOrigin(clientX: number, clientY: number, bounds: TapBounds): TapOrigin {
 	const width = Math.max(1, bounds.width);
 	const height = Math.max(1, bounds.height);
 	const x = clamp(clientX - bounds.left, 0, width);
@@ -64,11 +60,11 @@ export function getFamilyAlbumTapOrigin(
 	};
 }
 
-export function createFamilyAlbumTapParticles(
-	origin: FamilyAlbumTapOrigin,
+export function createTapParticles(
+	origin: TapOrigin,
 	burstId: number,
 	{ reducedMotion = false }: TapParticleOptions = {}
-): FamilyAlbumTapParticle[] {
+): TapParticle[] {
 	const particleCount = reducedMotion ? REDUCED_MOTION_PARTICLE_COUNT : TAP_PARTICLE_COUNT;
 	const baseDistance = reducedMotion
 		? REDUCED_MOTION_PARTICLE_BASE_DISTANCE_PX

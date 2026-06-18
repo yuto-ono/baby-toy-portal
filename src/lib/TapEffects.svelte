@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		createFamilyAlbumTapBurst,
-		createFamilyAlbumTapParticles,
-		getFamilyAlbumTapOrigin,
-		type FamilyAlbumTapBurst,
-		type FamilyAlbumTapParticle
-	} from './familyAlbumViewerEffects';
+		createTapBurst,
+		createTapParticles,
+		getTapOrigin,
+		type TapBurst,
+		type TapParticle
+	} from './tapEffects';
 
 	const TAP_EFFECT_LIFETIME_MS = 1000;
 	const MAX_ACTIVE_BURSTS = 3;
@@ -14,8 +14,8 @@
 
 	let { target }: { target?: HTMLElement } = $props();
 
-	let bursts = $state<FamilyAlbumTapBurst[]>([]);
-	let particles = $state<FamilyAlbumTapParticle[]>([]);
+	let bursts = $state<TapBurst[]>([]);
+	let particles = $state<TapParticle[]>([]);
 	let burstId = 0;
 	let prefersReducedMotion = $state(false);
 	const particleTimeoutIds: ReturnType<typeof setTimeout>[] = [];
@@ -47,15 +47,15 @@
 		function handlePointerDown(event: PointerEvent): void {
 			if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-			const origin = getFamilyAlbumTapOrigin(
+			const origin = getTapOrigin(
 				event.clientX,
 				event.clientY,
 				currentTarget.getBoundingClientRect()
 			);
-			const nextBurst = createFamilyAlbumTapBurst(origin, burstId, {
+			const nextBurst = createTapBurst(origin, burstId, {
 				reducedMotion: prefersReducedMotion
 			});
-			const nextParticles = createFamilyAlbumTapParticles(origin, burstId, {
+			const nextParticles = createTapParticles(origin, burstId, {
 				reducedMotion: prefersReducedMotion
 			});
 			const particleIds = new Set(nextParticles.map((particle) => particle.id));
@@ -85,7 +85,7 @@
 		};
 	});
 
-	function getParticleStyle(particle: FamilyAlbumTapParticle): string {
+	function getParticleStyle(particle: TapParticle): string {
 		return [
 			`--particle-x: ${particle.xPercent}%`,
 			`--particle-y: ${particle.yPercent}%`,
@@ -99,7 +99,7 @@
 		].join('; ');
 	}
 
-	function getBurstStyle(burst: FamilyAlbumTapBurst): string {
+	function getBurstStyle(burst: TapBurst): string {
 		return [
 			`--burst-x: ${burst.xPercent}%`,
 			`--burst-y: ${burst.yPercent}%`,

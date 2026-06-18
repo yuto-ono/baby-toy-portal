@@ -3,7 +3,10 @@
 	import Settings from '@lucide/svelte/icons/settings';
 	import Images from '@lucide/svelte/icons/images';
 	import Music from '@lucide/svelte/icons/music';
+	import { TapEffects } from '$lib';
 	import PlayCard from './PlayCard.svelte';
+
+	let pageElement = $state<HTMLElement>();
 </script>
 
 <svelte:head>
@@ -12,7 +15,7 @@
 	<meta name="description" content="子どもが楽しく遊べる、やさしいおもちゃのポータルです。" />
 </svelte:head>
 
-<main>
+<main bind:this={pageElement}>
 	<a class="settings-link" href={resolve('/settings')} aria-label="保護者設定">
 		<Settings size={24} strokeWidth={2.75} aria-hidden="true" />
 	</a>
@@ -34,6 +37,8 @@
 		<PlayCard href="/(play)/instruments" label="楽器で あそぼう" icon={musicIcon} />
 		<PlayCard href="/(play)/family-album" label="アルバムを 見よう" icon={albumIcon} />
 	</nav>
+
+	<TapEffects target={pageElement} />
 </main>
 
 <style lang="scss">
