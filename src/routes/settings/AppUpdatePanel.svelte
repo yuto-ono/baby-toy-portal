@@ -4,33 +4,37 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import { createAppUpdater, type AppUpdater, type AppUpdateStatus } from './appUpdater';
 
+	const statusMessages = {
+		idle: '',
+		checking: '新しいバージョンがないか確認しています。',
+		current: '現在のバージョンが最新です。',
+		available: '新しいバージョンがあります。更新後はホームへ戻ります。',
+		applying: '更新を適用しています。',
+		updated: '更新しました。ホームへ戻ります。',
+		offline: 'インターネット接続を確認して、もう一度お試しください。',
+		unavailable: 'この環境ではアプリの更新確認を利用できません。',
+		error: '更新を確認できませんでした。しばらくしてからもう一度お試しください。'
+	} satisfies Record<AppUpdateStatus, string>;
+
+	const buttonLabels = {
+		idle: '更新を確認',
+		checking: '確認中…',
+		current: '更新を確認',
+		available: '更新する',
+		applying: '更新中…',
+		updated: '更新中…',
+		offline: '更新を確認',
+		unavailable: '更新を確認',
+		error: '更新を確認'
+	} satisfies Record<AppUpdateStatus, string>;
+
 	let status = $state<AppUpdateStatus>('idle');
 	let updater: AppUpdater | undefined;
 
 	const isBusy = $derived(status === 'checking' || status === 'applying' || status === 'updated');
 	const isUnavailable = $derived(status === 'unavailable');
-	const statusMessage = $derived.by(() => {
-		switch (status) {
-			case 'checking':
-				return '新しいバージョンがないか確認しています。';
-			case 'current':
-				return '現在のバージョンが最新です。';
-			case 'available':
-				return '新しいバージョンがあります。更新後はホームへ戻ります。';
-			case 'applying':
-				return '更新を適用しています。';
-			case 'updated':
-				return '更新しました。ホームへ戻ります。';
-			case 'offline':
-				return 'インターネット接続を確認して、もう一度お試しください。';
-			case 'unavailable':
-				return 'この環境ではアプリの更新確認を利用できません。';
-			case 'error':
-				return '更新を確認できませんでした。しばらくしてからもう一度お試しください。';
-			default:
-				return 'インターネット上の新しいバージョンを確認できます。';
-		}
-	});
+	const statusMessage = $derived(statusMessages[status]);
+	const buttonLabel = $derived(buttonLabels[status]);
 
 	onMount(() => {
 		updater = createAppUpdater({
@@ -74,17 +78,11 @@
 		</div>
 
 		<button type="button" onclick={handleUpdateAction} disabled={isBusy || isUnavailable}>
-			{status === 'checking'
-				? '確認中…'
-				: status === 'available'
-					? '更新する'
-					: status === 'applying' || status === 'updated'
-						? '更新中…'
-						: '更新を確認'}
+			{buttonLabel}
 		</button>
 	</div>
 
-	<p class="status" aria-live="polite">{status === 'idle' ? '' : statusMessage}</p>
+	<p class="status" aria-live="polite">{statusMessage}</p>
 </section>
 
 <style lang="scss">
