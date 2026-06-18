@@ -34,12 +34,7 @@
 		<span>戻る</span>
 	</a>
 
-	<div
-		class={['dialog', `dialog-${variant}`]}
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby={labelledBy}
-	>
+	<div class={['dialog', `dialog-${variant}`]} role="dialog" aria-labelledby={labelledBy}>
 		{@render children()}
 	</div>
 </main>
