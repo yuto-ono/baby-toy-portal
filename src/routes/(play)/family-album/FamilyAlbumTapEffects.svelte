@@ -42,14 +42,15 @@
 	$effect(() => {
 		if (!target) return;
 
+		const currentTarget = target;
+
 		function handlePointerDown(event: PointerEvent): void {
 			if (event.pointerType === 'mouse' && event.button !== 0) return;
-			if (!target) return;
 
 			const origin = getFamilyAlbumTapOrigin(
 				event.clientX,
 				event.clientY,
-				target.getBoundingClientRect()
+				currentTarget.getBoundingClientRect()
 			);
 			const nextBurst = createFamilyAlbumTapBurst(origin, burstId, {
 				reducedMotion: prefersReducedMotion
@@ -77,10 +78,10 @@
 			particleTimeoutIds.push(timeoutId);
 		}
 
-		target.addEventListener('pointerdown', handlePointerDown);
+		currentTarget.addEventListener('pointerdown', handlePointerDown);
 
 		return () => {
-			target?.removeEventListener('pointerdown', handlePointerDown);
+			currentTarget.removeEventListener('pointerdown', handlePointerDown);
 		};
 	});
 
