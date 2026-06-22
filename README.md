@@ -49,7 +49,9 @@ src/
 │   ├── +page.svelte        # トップページ
 │   ├── (play)/             # 遊びページ用のルートグループ
 │   │   ├── +layout.svelte  # 遊びページ共通のレイアウト
-│   │   └── instruments/    # 楽器ページ
+│   │   ├── family-album/   # 家族アルバムページ
+│   │   ├── instruments/    # 楽器ページ
+│   │   └── ...             # 今後作成する遊びページはこちらに追加
 │   └── settings/           # 設定ページ
 └── service-worker.ts       # PWAのキャッシュと更新処理
 ```
