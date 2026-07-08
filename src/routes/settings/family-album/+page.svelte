@@ -6,7 +6,6 @@
 		deleteFamilyAlbumPhoto,
 		getFamilyAlbumPhotoNameFromFileName,
 		listFamilyAlbumPhotosWithIssues,
-		normalizeFamilyAlbumPhotoName,
 		reorderFamilyAlbumPhotos,
 		reorderFamilyAlbumPhotoRecords,
 		type FamilyAlbumPhotoRecordNormalizationIssue,
@@ -14,31 +13,47 @@
 		type FamilyAlbumPhoto,
 		type FamilyAlbumPhotoId
 	} from '$lib/family-album/familyAlbumPhotos';
-	import ImagePlus from '@lucide/svelte/icons/image-plus';
 	import FamilyAlbumCleanupPanel from './FamilyAlbumCleanupPanel.svelte';
-	import FamilyAlbumPhotoCard from './FamilyAlbumPhotoCard.svelte';
+	import FamilyAlbumPhotoDetailDialog from './FamilyAlbumPhotoDetailDialog.svelte';
+	import FamilyAlbumPhotoGrid from './FamilyAlbumPhotoGrid.svelte';
 	import FamilyAlbumReloadButton from './FamilyAlbumReloadButton.svelte';
+	import FamilyAlbumUploadPanel from './FamilyAlbumUploadPanel.svelte';
 	import {
 		moveFamilyAlbumPhotoId,
+		moveFamilyAlbumPhotoIdToEdge,
+		type FamilyAlbumPhotoMoveEdge,
 		type FamilyAlbumPhotoMoveDirection
 	} from './familyAlbumPhotoOrder';
-
-	type LoadState = 'loading' | 'ready' | 'error';
+	import {
+		getAvailableFamilyAlbumPhotoId,
+		getFamilyAlbumPhotoIdsWithAddedFirst,
+		getFamilyAlbumSettingsStatusMessage,
+		removeFamilyAlbumPhotoFromList,
+		renameFamilyAlbumPhotoInList,
+		type FamilyAlbumSettingsLoadState
+	} from './familyAlbumSettingsState';
 
 	let photos = $state<FamilyAlbumPhoto[]>([]);
 	let photoRecordIssues = $state<FamilyAlbumPhotoRecordNormalizationIssue[]>([]);
-	let loadState = $state<LoadState>('loading');
+	let loadState = $state<FamilyAlbumSettingsLoadState>('loading');
 	let isWorking = $state(false);
 	let errorMessage = $state('');
 	let canRetryReload = $state(false);
+	let selectedPhotoId = $state<FamilyAlbumPhotoId>();
 
 	const isBusy = $derived(loadState === 'loading' || isWorking);
-	const statusMessage = $derived.by(() => {
-		if (loadState === 'loading') return '写真を読み込んでいます。';
-		if (isWorking) return '保存しています。';
-
-		return errorMessage;
-	});
+	const selectedAvailablePhotoId = $derived(
+		getAvailableFamilyAlbumPhotoId(selectedPhotoId, photos)
+	);
+	const selectedPhoto = $derived(photos.find((photo) => photo.id === selectedAvailablePhotoId));
+	const selectedPhotoIndex = $derived(
+		selectedAvailablePhotoId
+			? photos.findIndex((photo) => photo.id === selectedAvailablePhotoId)
+			: -1
+	);
+	const statusMessage = $derived(
+		getFamilyAlbumSettingsStatusMessage({ loadState, isWorking, errorMessage })
+	);
 
 	onMount(() => {
 		void loadPhotos();
@@ -74,10 +89,17 @@
 		canRetryReload = false;
 
 		try {
+			const addedPhotoIds: FamilyAlbumPhotoId[] = [];
+
 			for (const file of selectedFiles) {
-				await addNamedFamilyAlbumPhoto(file, getFamilyAlbumPhotoNameFromFileName(file.name));
+				const addedPhoto = await addNamedFamilyAlbumPhoto(
+					file,
+					getFamilyAlbumPhotoNameFromFileName(file.name)
+				);
+				addedPhotoIds.push(addedPhoto.id);
 			}
 
+			await moveAddedPhotosToFront(addedPhotoIds);
 			await refreshPhotosWithIssues();
 			loadState = 'ready';
 		} catch {
@@ -93,6 +115,19 @@
 			isWorking = false;
 			input.value = '';
 		}
+	}
+
+	async function moveAddedPhotosToFront(
+		addedPhotoIds: readonly FamilyAlbumPhotoId[]
+	): Promise<void> {
+		if (addedPhotoIds.length === 0) return;
+
+		await reorderFamilyAlbumPhotos(
+			getFamilyAlbumPhotoIdsWithAddedFirst(
+				photos.map((photo) => photo.id),
+				addedPhotoIds
+			)
+		);
 	}
 
 	async function removeBrokenPhotoRecords(): Promise<void> {
@@ -153,11 +188,7 @@
 
 			if (!saved) return;
 
-			photos = photos.map((photo) =>
-				photo.id === id
-					? { ...photo, name: normalizeFamilyAlbumPhotoName(name, photo.name) }
-					: photo
-			);
+			photos = renameFamilyAlbumPhotoInList(photos, id, name);
 			await reloadPhotosAfterSuccessfulSave(
 				'写真の名前を保存しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
 			);
@@ -176,6 +207,23 @@
 			direction
 		);
 
+		await savePhotoOrder(orderedIds);
+	}
+
+	async function movePhotoToEdge(
+		id: FamilyAlbumPhotoId,
+		edge: FamilyAlbumPhotoMoveEdge
+	): Promise<void> {
+		const orderedIds = moveFamilyAlbumPhotoIdToEdge(
+			photos.map((photo) => photo.id),
+			id,
+			edge
+		);
+
+		await savePhotoOrder(orderedIds);
+	}
+
+	async function savePhotoOrder(orderedIds: readonly FamilyAlbumPhotoId[]): Promise<void> {
 		if (orderedIds.every((orderedId, index) => orderedId === photos[index]?.id)) return;
 
 		isWorking = true;
@@ -217,7 +265,7 @@
 
 			if (!saved) return;
 
-			photos = photos.filter((currentPhoto) => currentPhoto.id !== id);
+			photos = removeFamilyAlbumPhotoFromList(photos, id);
 			await reloadPhotosAfterSuccessfulSave(
 				'写真を削除しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
 			);
@@ -265,25 +313,7 @@
 	<PageNavigation title="家族アルバム" backHref="/settings" backLabel="設定" />
 
 	<div class="content">
-		<section class="upload-panel" aria-labelledby="family-album-upload-title">
-			<div>
-				<p class="eyebrow">写真管理</p>
-				<h2 id="family-album-upload-title">アルバムの写真</h2>
-			</div>
-
-			<input
-				id="family-album-files"
-				type="file"
-				accept="image/*"
-				multiple
-				disabled={isBusy}
-				onchange={addPhotos}
-			/>
-			<label class="upload-button" class:disabled={isBusy} for="family-album-files">
-				<ImagePlus size={24} strokeWidth={2.8} aria-hidden="true" />
-				<span>{isWorking ? '保存中…' : '写真を追加'}</span>
-			</label>
-		</section>
+		<FamilyAlbumUploadPanel {isBusy} {isWorking} onAddPhotos={addPhotos} />
 
 		{#if statusMessage || canRetryReload}
 			<div class="status-row" aria-live="polite">
@@ -316,32 +346,38 @@
 				<p>上のボタンから、アルバムに表示する写真を追加できます。</p>
 			</section>
 		{:else if photos.length > 0}
-			<div class="photo-list" aria-label="登録済み写真">
-				{#each photos as photo, index (photo.id)}
-					<FamilyAlbumPhotoCard
-						{photo}
-						positionLabel={`${index + 1}枚目`}
-						canMoveUp={index > 0}
-						canMoveDown={index < photos.length - 1}
-						disabled={isBusy}
-						onRename={renamePhoto}
-						onMoveUp={(id) => movePhoto(id, -1)}
-						onMoveDown={(id) => movePhoto(id, 1)}
-						onDelete={removePhoto}
-					/>
-				{/each}
-			</div>
+			<FamilyAlbumPhotoGrid
+				{photos}
+				selectedPhotoId={selectedAvailablePhotoId}
+				disabled={isBusy}
+				onSelect={(id) => (selectedPhotoId = id)}
+			/>
 		{/if}
 	</div>
+
+	{#if selectedPhoto && selectedPhotoIndex >= 0}
+		<FamilyAlbumPhotoDetailDialog
+			photo={selectedPhoto}
+			positionLabel={`${selectedPhotoIndex + 1}枚目`}
+			canMoveUp={selectedPhotoIndex > 0}
+			canMoveDown={selectedPhotoIndex < photos.length - 1}
+			disabled={isBusy}
+			onClose={() => (selectedPhotoId = undefined)}
+			onRename={renamePhoto}
+			onMoveFirst={(id) => movePhotoToEdge(id, 'first')}
+			onMovePrevious={(id) => movePhoto(id, -1)}
+			onMoveNext={(id) => movePhoto(id, 1)}
+			onMoveLast={(id) => movePhotoToEdge(id, 'last')}
+			onDelete={removePhoto}
+		/>
+	{/if}
 </main>
 
 <style lang="scss">
 	$ink: #333145;
 	$page-background: #fff8e7;
 	$muted: #666274;
-	$accent-pink: #ff8d8d;
 	$accent-yellow: #ffe272;
-	$accent-mint: #67c7bf;
 
 	main {
 		min-height: 100dvh;
@@ -356,77 +392,16 @@
 		margin: clamp(1.5rem, 5vw, 3rem) auto 0;
 	}
 
-	.upload-panel,
 	.empty-state {
 		border: 3px solid $ink;
 		border-radius: 1.5rem;
 		background: #fff;
 	}
 
-	.upload-panel {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 1.1rem 1.25rem;
-		box-shadow: 6px 6px 0 $accent-pink;
-	}
-
-	.eyebrow {
-		margin: 0;
-		color: #c84c5a;
-		font-size: 0.85rem;
-		font-weight: 800;
-		letter-spacing: 0.08em;
-	}
-
 	h2 {
 		margin: 0.25rem 0 0;
 		font-size: clamp(1.35rem, 4vw, 1.9rem);
 		line-height: 1.25;
-	}
-
-	input[type='file'] {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
-	}
-
-	.upload-button {
-		display: inline-flex;
-		min-height: 3.4rem;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.65rem 1.1rem;
-		border: 2px solid $ink;
-		border-radius: 999px;
-		background: $accent-mint;
-		color: $ink;
-		font: inherit;
-		font-size: 1rem;
-		font-weight: 800;
-		text-decoration: none;
-		white-space: nowrap;
-		cursor: pointer;
-
-		&:focus-visible {
-			outline: 4px solid $accent-yellow;
-			outline-offset: 3px;
-		}
-	}
-
-	.upload-button.disabled {
-		cursor: wait;
-		opacity: 0.6;
-	}
-
-	input[type='file']:focus-visible + .upload-button {
-		outline: 4px solid $accent-yellow;
-		outline-offset: 3px;
 	}
 
 	.status-row {
@@ -459,24 +434,9 @@
 		}
 	}
 
-	.photo-list {
-		display: grid;
-		margin-top: 1.5rem;
-		gap: 1rem;
-	}
-
 	@media (max-width: 620px) {
 		.content {
 			width: min(calc(100% - 1.5rem), 56rem);
-		}
-
-		.upload-panel {
-			align-items: stretch;
-			flex-direction: column;
-		}
-
-		.upload-button {
-			width: 100%;
 		}
 
 		.status-row {
