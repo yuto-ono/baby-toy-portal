@@ -78,7 +78,7 @@ pnpm test
 
 ## 全体見直し
 
-AIエージェントに「全体見直し」と依頼すると、[`AGENTS.md`](./AGENTS.md) の基準に沿ってコード全体をレビューします。明示的な許可なしに、コード変更や Issue 作成は行いません。
+コード全体レビュー用の AI エージェント向けスキルとして、[`.agents/skills/whole-codebase-review`](./.agents/skills/whole-codebase-review/SKILL.md) を用意しています。レビュー基準には [`AGENTS.md`](./AGENTS.md) を使い、明示的な許可なしにコード変更や Issue 作成は行いません。
 
 ## Cloudflare Pages
 
