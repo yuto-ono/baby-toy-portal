@@ -150,6 +150,33 @@ describe('normalizeFamilyAlbumPhotoRecords', () => {
 		expect(result.issues[0]?.error).toBeInstanceOf(Error);
 	});
 
+	it('keeps issue details for records with invalid metadata', async () => {
+		const result = await normalizeFamilyAlbumPhotoRecordsWithIssues([
+			createStoredPhoto('a', 0),
+			createStoredPhoto('invalid-width', 1, { width: 0 }),
+			createStoredPhoto('invalid-order', 2, { order: Number.NaN }),
+			createStoredPhoto('invalid-created-at', 3, { createdAt: -1 }),
+			{ ...createStoredPhoto('invalid-id', 4), id: 123 } as unknown as StoredFamilyAlbumPhoto,
+			createStoredPhoto('invalid-name', 5, {
+				name: 123 as unknown as StoredFamilyAlbumPhoto['name']
+			}),
+			createStoredPhoto('invalid-mime-type', 6, {
+				mimeType: 123 as unknown as StoredFamilyAlbumPhoto['mimeType']
+			})
+		]);
+
+		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
+		expect(result.issues.map(({ id, reason }) => ({ id, reason }))).toEqual([
+			{ id: 'invalid-width', reason: 'invalid-record' },
+			{ id: 'invalid-order', reason: 'invalid-record' },
+			{ id: 'invalid-created-at', reason: 'invalid-record' },
+			{ id: 'unknown-photo-record-5', reason: 'invalid-record' },
+			{ id: 'invalid-name', reason: 'invalid-record' },
+			{ id: 'invalid-mime-type', reason: 'invalid-record' }
+		]);
+		expect(result.issues.every((issue) => issue.error instanceof Error)).toBe(true);
+	});
+
 	it('returns an empty photo list when all records are broken', async () => {
 		await expect(
 			normalizeFamilyAlbumPhotoRecords([createStoredPhoto('broken', 0, { imageData: undefined })])

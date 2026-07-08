@@ -35,7 +35,10 @@ export type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & 
 	name?: string;
 };
 
-export type FamilyAlbumPhotoRecordNormalizationIssueReason = 'missing-image' | 'restore-failed';
+export type FamilyAlbumPhotoRecordNormalizationIssueReason =
+	| 'missing-image'
+	| 'invalid-record'
+	| 'restore-failed';
 
 export type FamilyAlbumPhotoRecordNormalizationIssue = {
 	id: FamilyAlbumPhotoId;
@@ -398,7 +401,7 @@ export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 		}
 
 		issues.push({
-			id: photos[index].id,
+			id: getFamilyAlbumPhotoRecordIssueId(photos[index], index),
 			reason: getFamilyAlbumPhotoRecordNormalizationIssueReason(settledPhoto.reason),
 			error: settledPhoto.reason
 		});
@@ -410,6 +413,8 @@ export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 async function normalizeFamilyAlbumPhotoRecord(
 	photo: StoredFamilyAlbumPhoto
 ): Promise<FamilyAlbumPhoto> {
+	assertValidStoredFamilyAlbumPhotoRecord(photo);
+
 	const mimeType = getStoredFamilyAlbumPhotoMimeType(photo);
 
 	return {
@@ -428,6 +433,55 @@ function getStoredFamilyAlbumPhotoMimeType(photo: StoredFamilyAlbumPhoto) {
 	return photo.mimeType || photo.image?.type || PHOTO_MIME_TYPE;
 }
 
+function assertValidStoredFamilyAlbumPhotoRecord(photo: StoredFamilyAlbumPhoto): void {
+	if (typeof photo.id !== 'string') {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('id');
+	}
+
+	if (!isPositiveFiniteNumber(photo.width)) {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('width');
+	}
+
+	if (!isPositiveFiniteNumber(photo.height)) {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('height');
+	}
+
+	if (!isFiniteNumberAtLeast(photo.order, REORDER_START)) {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('order');
+	}
+
+	if (!isFiniteNumberAtLeast(photo.createdAt, 0)) {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('createdAt');
+	}
+
+	if (photo.mimeType !== undefined && typeof photo.mimeType !== 'string') {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('mimeType');
+	}
+
+	if (photo.name !== undefined && typeof photo.name !== 'string') {
+		throw new StoredFamilyAlbumPhotoRecordInvalidError('name');
+	}
+}
+
+function isPositiveFiniteNumber(value: unknown) {
+	return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function isFiniteNumberAtLeast(value: unknown, min: number) {
+	return typeof value === 'number' && Number.isFinite(value) && value >= min;
+}
+
+function getFamilyAlbumPhotoRecordIssueId(
+	photo: StoredFamilyAlbumPhoto,
+	index: number
+): FamilyAlbumPhotoId {
+	if (typeof photo.id === 'string') {
+		return photo.id;
+	}
+
+	return `unknown-photo-record-${index + 1}`;
+}
+
 function getFamilyAlbumPhotoRecordNormalizationIssueReason(
 	error: unknown
 ): FamilyAlbumPhotoRecordNormalizationIssueReason {
@@ -435,7 +489,18 @@ function getFamilyAlbumPhotoRecordNormalizationIssueReason(
 		return 'missing-image';
 	}
 
+	if (error instanceof StoredFamilyAlbumPhotoRecordInvalidError) {
+		return 'invalid-record';
+	}
+
 	return 'restore-failed';
+}
+
+class StoredFamilyAlbumPhotoRecordInvalidError extends Error {
+	constructor(fieldName: string) {
+		super(`Stored photo record has invalid ${fieldName}.`);
+		this.name = 'StoredFamilyAlbumPhotoRecordInvalidError';
+	}
 }
 
 class StoredFamilyAlbumPhotoImageMissingError extends Error {
