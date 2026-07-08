@@ -61,7 +61,13 @@
 <svelte:window onkeydown={closeOnEscape} />
 
 <div class="backdrop">
-	<button class="backdrop-close" type="button" {disabled} aria-label="閉じる" onclick={onClose}
+	<button
+		class="backdrop-close"
+		type="button"
+		{disabled}
+		tabindex="-1"
+		aria-label="閉じる"
+		onclick={onClose}
 	></button>
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="photo-detail-title">
 		<div class="dialog-header">
