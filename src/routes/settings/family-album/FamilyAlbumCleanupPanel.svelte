@@ -8,6 +8,7 @@
 
 	const photoRecordIssueLabels = {
 		'missing-image': '画像データが見つかりません。',
+		'invalid-record': '写真レコードの形式が正しくありません。',
 		'restore-failed': '写真データを復元できませんでした。'
 	} satisfies Record<FamilyAlbumPhotoRecordNormalizationIssueReason, string>;
 
