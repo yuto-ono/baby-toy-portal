@@ -4,6 +4,8 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
+const serviceWorkerExcludedFiles = new Set(['_headers', '_redirects']);
+
 export default defineConfig({
 	plugins: [
 		sveltekit({
@@ -15,7 +17,10 @@ export default defineConfig({
 			},
 			adapter: adapter({
 				fallback: 'index.html'
-			})
+			}),
+			serviceWorker: {
+				files: (file) => !serviceWorkerExcludedFiles.has(file) && !/\.DS_Store/.test(file)
+			}
 		})
 	],
 	server: {
