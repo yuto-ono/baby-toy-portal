@@ -6,6 +6,7 @@
 	import Save from '@lucide/svelte/icons/save';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
+	import { onMount } from 'svelte';
 	import type { FamilyAlbumPhoto, FamilyAlbumPhotoId } from '$lib/family-album/familyAlbumPhotos';
 	import FamilyAlbumPhotoThumbnail from './FamilyAlbumPhotoThumbnail.svelte';
 
@@ -38,10 +39,24 @@
 	} = $props();
 
 	let draftName = $derived(photo.name);
+	let dialogElement = $state<HTMLDialogElement>();
+	let isUnmounting = false;
 
 	const canSaveName = $derived(
 		!disabled && draftName.trim().length > 0 && draftName !== photo.name
 	);
+
+	onMount(() => {
+		dialogElement?.showModal();
+
+		return () => {
+			isUnmounting = true;
+
+			if (dialogElement?.open) {
+				dialogElement.close();
+			}
+		};
+	});
 
 	async function saveName(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
@@ -51,31 +66,54 @@
 		await onRename(photo.id, draftName);
 	}
 
-	function closeOnEscape(event: KeyboardEvent): void {
-		if (event.key !== 'Escape' || disabled) return;
+	function closeOnNativeClose(): void {
+		if (isUnmounting) return;
 
 		onClose();
 	}
+
+	function keepOpenWhileDisabled(event: Event): void {
+		if (!disabled) return;
+
+		event.preventDefault();
+	}
+
+	function requestClose(): void {
+		if (disabled) return;
+
+		dialogElement?.close();
+	}
 </script>
 
-<svelte:window onkeydown={closeOnEscape} />
-
-<div class="backdrop">
+<dialog
+	bind:this={dialogElement}
+	class="dialog"
+	aria-labelledby="photo-detail-title"
+	oncancel={keepOpenWhileDisabled}
+	onclose={closeOnNativeClose}
+>
 	<button
 		class="backdrop-close"
 		type="button"
 		{disabled}
 		tabindex="-1"
 		aria-label="閉じる"
-		onclick={onClose}
+		onclick={requestClose}
 	></button>
-	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="photo-detail-title">
+
+	<div class="dialog-panel">
 		<div class="dialog-header">
 			<div>
 				<p class="position">{positionLabel}</p>
 				<h2 id="photo-detail-title">写真の詳細</h2>
 			</div>
-			<button class="icon-button" type="button" {disabled} aria-label="閉じる" onclick={onClose}>
+			<button
+				class="icon-button"
+				type="button"
+				{disabled}
+				aria-label="閉じる"
+				onclick={requestClose}
+			>
 				<X size={24} strokeWidth={2.8} aria-hidden="true" />
 			</button>
 		</div>
@@ -146,7 +184,7 @@
 			</button>
 		</div>
 	</div>
-</div>
+</dialog>
 
 <style lang="scss">
 	$ink: #333145;
@@ -155,18 +193,33 @@
 	$accent-mint: #67c7bf;
 	$danger: #df5b69;
 
-	.backdrop {
+	.dialog {
 		position: fixed;
-		z-index: 20;
 		inset: 0;
 		display: grid;
+		width: 100%;
+		max-width: none;
+		height: 100%;
+		max-height: none;
+		margin: 0;
+		overflow: hidden;
 		place-items: center;
 		padding: 1rem;
+		border: 0;
+		background: transparent;
+	}
+
+	.dialog:not([open]) {
+		display: none;
+	}
+
+	.dialog::backdrop {
 		background: rgba($ink, 0.42);
 	}
 
 	.backdrop-close {
 		position: absolute;
+		z-index: 0;
 		inset: 0;
 		width: 100%;
 		height: 100%;
@@ -178,7 +231,7 @@
 		cursor: default;
 	}
 
-	.dialog {
+	.dialog-panel {
 		position: relative;
 		z-index: 1;
 		display: grid;
@@ -326,12 +379,12 @@
 	}
 
 	@media (max-width: 520px) {
-		.backdrop {
-			align-items: end;
+		.dialog {
+			place-items: end center;
 			padding: 0.75rem;
 		}
 
-		.dialog {
+		.dialog-panel {
 			max-height: calc(100dvh - 1.5rem);
 		}
 

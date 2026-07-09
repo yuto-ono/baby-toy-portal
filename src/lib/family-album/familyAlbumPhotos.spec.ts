@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	FAMILY_ALBUM_PHOTO_NAME_MAX_LENGTH,
+	createIndexedDbFamilyAlbumPhotoStorage,
 	createFamilyAlbumPhotoRepository,
 	getFamilyAlbumPhotoNameFromFileName,
 	getFamilyAlbumResizeDimensions,
@@ -11,6 +12,11 @@ import {
 	type FamilyAlbumPhoto,
 	type StoredFamilyAlbumPhoto
 } from './familyAlbumPhotos';
+
+type StoredPhotoCursorEntry = {
+	key: IDBValidKey;
+	photo: StoredFamilyAlbumPhoto;
+};
 
 function createPhotoStorageMock(initialPhotos: readonly FamilyAlbumPhoto[] = []) {
 	let photos = [...initialPhotos];
@@ -69,6 +75,89 @@ function createStoredPhoto(
 		createdAt: order,
 		...overrides
 	};
+}
+
+function createIndexedDbFactoryMock(entries: readonly StoredPhotoCursorEntry[]): IDBFactory {
+	const store = {
+		indexNames: { contains: () => true },
+		openCursor: () => createCursorRequest(entries),
+		index: () => {
+			throw new Error('Photo issue listing should scan the object store.');
+		}
+	} as unknown as IDBObjectStore;
+	const database = {
+		objectStoreNames: { contains: () => true },
+		transaction: () => createTransactionMock(store),
+		close() {}
+	} as unknown as IDBDatabase;
+
+	return {
+		open: () => createOpenDatabaseRequest(database)
+	} as unknown as IDBFactory;
+}
+
+function createOpenDatabaseRequest(database: IDBDatabase): IDBOpenDBRequest {
+	const request = {
+		result: database,
+		error: null,
+		onsuccess: null,
+		onerror: null,
+		onupgradeneeded: null
+	} as unknown as IDBOpenDBRequest;
+
+	queueMicrotask(() => {
+		request.onsuccess?.(new Event('success'));
+	});
+
+	return request;
+}
+
+function createTransactionMock(store: IDBObjectStore): IDBTransaction {
+	const transaction = {
+		error: null,
+		objectStore: () => store,
+		oncomplete: null,
+		onerror: null,
+		onabort: null
+	} as unknown as IDBTransaction;
+
+	setTimeout(() => {
+		transaction.oncomplete?.(new Event('complete'));
+	}, 0);
+
+	return transaction;
+}
+
+function createCursorRequest(
+	entries: readonly StoredPhotoCursorEntry[]
+): IDBRequest<IDBCursorWithValue | null> {
+	let index = 0;
+	const request = {
+		error: null,
+		onsuccess: null,
+		onerror: null,
+		get result() {
+			if (index >= entries.length) return null;
+
+			const entry = entries[index];
+			return {
+				primaryKey: entry.key,
+				value: entry.photo,
+				continue() {
+					index += 1;
+					queueMicrotask(() => {
+						request.onsuccess?.(new Event('success'));
+					});
+				}
+			};
+		}
+	} as unknown as IDBRequest<IDBCursorWithValue | null>;
+
+	queueMicrotask(() => {
+		request.onsuccess?.(new Event('success'));
+	});
+
+	return request;
 }
 
 describe('normalizeFamilyAlbumPhotoName', () => {
@@ -146,7 +235,11 @@ describe('normalizeFamilyAlbumPhotoRecords', () => {
 
 		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
 		expect(result.issues).toHaveLength(1);
-		expect(result.issues[0]).toMatchObject({ id: 'broken', reason: 'missing-image' });
+		expect(result.issues[0]).toMatchObject({
+			id: 'broken',
+			deleteKey: 'broken',
+			reason: 'missing-image'
+		});
 		expect(result.issues[0]?.error).toBeInstanceOf(Error);
 	});
 
@@ -166,13 +259,21 @@ describe('normalizeFamilyAlbumPhotoRecords', () => {
 		]);
 
 		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
-		expect(result.issues.map(({ id, reason }) => ({ id, reason }))).toEqual([
-			{ id: 'invalid-width', reason: 'invalid-record' },
-			{ id: 'invalid-order', reason: 'invalid-record' },
-			{ id: 'invalid-created-at', reason: 'invalid-record' },
-			{ id: 'unknown-photo-record-5', reason: 'invalid-record' },
-			{ id: 'invalid-name', reason: 'invalid-record' },
-			{ id: 'invalid-mime-type', reason: 'invalid-record' }
+		expect(result.issues.map(({ id, deleteKey, reason }) => ({ id, deleteKey, reason }))).toEqual([
+			{ id: 'invalid-width', deleteKey: 'invalid-width', reason: 'invalid-record' },
+			{ id: 'invalid-order', deleteKey: 'invalid-order', reason: 'invalid-record' },
+			{
+				id: 'invalid-created-at',
+				deleteKey: 'invalid-created-at',
+				reason: 'invalid-record'
+			},
+			{ id: 'unknown-photo-record-5', deleteKey: 123, reason: 'invalid-record' },
+			{ id: 'invalid-name', deleteKey: 'invalid-name', reason: 'invalid-record' },
+			{
+				id: 'invalid-mime-type',
+				deleteKey: 'invalid-mime-type',
+				reason: 'invalid-record'
+			}
 		]);
 		expect(result.issues.every((issue) => issue.error instanceof Error)).toBe(true);
 	});
@@ -181,6 +282,27 @@ describe('normalizeFamilyAlbumPhotoRecords', () => {
 		await expect(
 			normalizeFamilyAlbumPhotoRecords([createStoredPhoto('broken', 0, { imageData: undefined })])
 		).resolves.toEqual([]);
+	});
+});
+
+describe('createIndexedDbFamilyAlbumPhotoStorage', () => {
+	it('lists issues for records that are missing valid display-order index keys', async () => {
+		const storage = createIndexedDbFamilyAlbumPhotoStorage(() =>
+			createIndexedDbFactoryMock([
+				{ key: 'a', photo: createStoredPhoto('a', 1) },
+				{
+					key: 'invalid-order',
+					photo: createStoredPhoto('invalid-order', 2, { order: Number.NaN })
+				}
+			])
+		);
+
+		const result = await storage.listWithIssues();
+
+		expect(result.photos.map((photo) => photo.id)).toEqual(['a']);
+		expect(result.issues.map(({ id, deleteKey, reason }) => ({ id, deleteKey, reason }))).toEqual([
+			{ id: 'invalid-order', deleteKey: 'invalid-order', reason: 'invalid-record' }
+		]);
 	});
 });
 
@@ -268,7 +390,14 @@ describe('createFamilyAlbumPhotoRepository', () => {
 				async listWithIssues() {
 					return {
 						photos: [createPhoto('later', 1), createPhoto('first', 0)],
-						issues: [{ id: 'broken', reason: 'restore-failed', error: brokenRecordError }]
+						issues: [
+							{
+								id: 'broken',
+								deleteKey: 'broken',
+								reason: 'restore-failed',
+								error: brokenRecordError
+							}
+						]
 					};
 				},
 				async putAll() {},
@@ -286,7 +415,7 @@ describe('createFamilyAlbumPhotoRepository', () => {
 
 		expect(result.photos.map((photo) => photo.id)).toEqual(['first', 'later']);
 		expect(result.issues).toEqual([
-			{ id: 'broken', reason: 'restore-failed', error: brokenRecordError }
+			{ id: 'broken', deleteKey: 'broken', reason: 'restore-failed', error: brokenRecordError }
 		]);
 	});
 
