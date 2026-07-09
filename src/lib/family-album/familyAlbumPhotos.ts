@@ -35,6 +35,13 @@ export type StoredFamilyAlbumPhoto = Omit<FamilyAlbumPhoto, 'image' | 'name'> & 
 	name?: string;
 };
 
+export type FamilyAlbumPhotoRecordKey = IDBValidKey;
+
+type StoredFamilyAlbumPhotoEntry = {
+	key: FamilyAlbumPhotoRecordKey;
+	photo: StoredFamilyAlbumPhoto;
+};
+
 export type FamilyAlbumPhotoRecordNormalizationIssueReason =
 	| 'missing-image'
 	| 'invalid-record'
@@ -42,6 +49,7 @@ export type FamilyAlbumPhotoRecordNormalizationIssueReason =
 
 export type FamilyAlbumPhotoRecordNormalizationIssue = {
 	id: FamilyAlbumPhotoId;
+	deleteKey: FamilyAlbumPhotoRecordKey;
 	reason: FamilyAlbumPhotoRecordNormalizationIssueReason;
 	error: unknown;
 };
@@ -56,7 +64,7 @@ type PhotoStorage = {
 	list(): Promise<FamilyAlbumPhoto[]>;
 	listWithIssues(): Promise<FamilyAlbumPhotoRecordNormalizationResult>;
 	putAll(photos: readonly FamilyAlbumPhoto[]): Promise<void>;
-	delete(id: FamilyAlbumPhotoId): Promise<void>;
+	delete(key: FamilyAlbumPhotoRecordKey): Promise<void>;
 };
 
 type FamilyAlbumPhotoRepositoryOptions = {
@@ -198,8 +206,8 @@ export function createFamilyAlbumPhotoRepository({
 		await storage.putAll([{ ...photo, name: normalizeFamilyAlbumPhotoName(name, photo.name) }]);
 	}
 
-	async function deletePhoto(id: FamilyAlbumPhotoId) {
-		await storage.delete(id);
+	async function deletePhoto(key: FamilyAlbumPhotoRecordKey) {
+		await storage.delete(key);
 	}
 
 	return {
@@ -256,21 +264,34 @@ export function createIndexedDbFamilyAlbumPhotoStorage(
 		}
 	}
 
-	async function readStoredPhotos(store: IDBObjectStore) {
-		if (store.indexNames.contains(PHOTO_ORDER_INDEX_NAME)) {
-			return requestToPromise<StoredFamilyAlbumPhoto[]>(
-				store.index(PHOTO_ORDER_INDEX_NAME).getAll()
-			);
-		}
+	function readStoredPhotoEntries(store: IDBObjectStore) {
+		return new Promise<StoredFamilyAlbumPhotoEntry[]>((resolve, reject) => {
+			const entries: StoredFamilyAlbumPhotoEntry[] = [];
+			const request = store.openCursor();
 
-		return requestToPromise<StoredFamilyAlbumPhoto[]>(store.getAll());
+			request.onsuccess = () => {
+				const cursor = request.result;
+
+				if (!cursor) {
+					resolve(entries);
+					return;
+				}
+
+				entries.push({
+					key: cursor.primaryKey,
+					photo: cursor.value as StoredFamilyAlbumPhoto
+				});
+				cursor.continue();
+			};
+			request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed.'));
+		});
 	}
 
 	async function listWithIssues() {
 		return withStore('readonly', async (store) => {
-			const photos = await readStoredPhotos(store);
+			const entries = await readStoredPhotoEntries(store);
 
-			return normalizeFamilyAlbumPhotoRecordsWithIssues(photos);
+			return normalizeFamilyAlbumPhotoRecordEntriesWithIssues(entries);
 		});
 	}
 
@@ -363,8 +384,8 @@ export function updateFamilyAlbumPhotoName(id: FamilyAlbumPhotoId, name: string)
 	return getFamilyAlbumPhotoRepository().updatePhotoName(id, name);
 }
 
-export function deleteFamilyAlbumPhoto(id: FamilyAlbumPhotoId) {
-	return getFamilyAlbumPhotoRepository().deletePhoto(id);
+export function deleteFamilyAlbumPhoto(key: FamilyAlbumPhotoRecordKey) {
+	return getFamilyAlbumPhotoRepository().deletePhoto(key);
 }
 
 async function serializeFamilyAlbumPhotoRecord(
@@ -388,9 +409,22 @@ export async function normalizeFamilyAlbumPhotoRecords(photos: readonly StoredFa
 export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 	photos: readonly StoredFamilyAlbumPhoto[]
 ): Promise<FamilyAlbumPhotoRecordNormalizationResult> {
+	return normalizeFamilyAlbumPhotoRecordEntriesWithIssues(
+		photos.map((photo, index) => ({
+			key: getFamilyAlbumPhotoRecordIssueDeleteKey(photo, index),
+			photo
+		}))
+	);
+}
+
+async function normalizeFamilyAlbumPhotoRecordEntriesWithIssues(
+	entries: readonly StoredFamilyAlbumPhotoEntry[]
+): Promise<FamilyAlbumPhotoRecordNormalizationResult> {
 	// NOTE: 壊れたレコードは自動削除せず、クリーンアップ UI 用に情報を残す。
 	// 一覧読み込みでは、正常に復元できた写真だけを返す。
-	const settledPhotos = await Promise.allSettled(photos.map(normalizeFamilyAlbumPhotoRecord));
+	const settledPhotos = await Promise.allSettled(
+		entries.map((entry) => normalizeFamilyAlbumPhotoRecord(entry.photo))
+	);
 	const normalizedPhotos: FamilyAlbumPhoto[] = [];
 	const issues: FamilyAlbumPhotoRecordNormalizationIssue[] = [];
 
@@ -401,7 +435,8 @@ export async function normalizeFamilyAlbumPhotoRecordsWithIssues(
 		}
 
 		issues.push({
-			id: getFamilyAlbumPhotoRecordIssueId(photos[index], index),
+			id: getFamilyAlbumPhotoRecordIssueId(entries[index].photo, index),
+			deleteKey: entries[index].key,
 			reason: getFamilyAlbumPhotoRecordNormalizationIssueReason(settledPhoto.reason),
 			error: settledPhoto.reason
 		});
@@ -480,6 +515,25 @@ function getFamilyAlbumPhotoRecordIssueId(
 	}
 
 	return `unknown-photo-record-${index + 1}`;
+}
+
+function getFamilyAlbumPhotoRecordIssueDeleteKey(
+	photo: StoredFamilyAlbumPhoto,
+	index: number
+): FamilyAlbumPhotoRecordKey {
+	if (isFamilyAlbumPhotoRecordKey(photo.id)) {
+		return photo.id;
+	}
+
+	return getFamilyAlbumPhotoRecordIssueId(photo, index);
+}
+
+function isFamilyAlbumPhotoRecordKey(value: unknown): value is FamilyAlbumPhotoRecordKey {
+	if (typeof value === 'string' || typeof value === 'number') return true;
+	if (value instanceof Date || value instanceof ArrayBuffer) return true;
+	if (ArrayBuffer.isView(value)) return true;
+
+	return Array.isArray(value) && value.every(isFamilyAlbumPhotoRecordKey);
 }
 
 function getFamilyAlbumPhotoRecordNormalizationIssueReason(

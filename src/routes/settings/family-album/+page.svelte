@@ -9,6 +9,7 @@
 		reorderFamilyAlbumPhotos,
 		reorderFamilyAlbumPhotoRecords,
 		type FamilyAlbumPhotoRecordNormalizationIssue,
+		type FamilyAlbumPhotoRecordKey,
 		updateFamilyAlbumPhotoName,
 		type FamilyAlbumPhoto,
 		type FamilyAlbumPhotoId
@@ -145,20 +146,24 @@
 		errorMessage = '';
 		canRetryReload = false;
 
-		const deletedIds: FamilyAlbumPhotoId[] = [];
+		const deletedKeys: FamilyAlbumPhotoRecordKey[] = [];
 
 		try {
 			for (const issue of issuesToDelete) {
-				await deleteFamilyAlbumPhoto(issue.id);
-				deletedIds.push(issue.id);
+				await deleteFamilyAlbumPhoto(issue.deleteKey);
+				deletedKeys.push(issue.deleteKey);
 			}
 
-			photoRecordIssues = photoRecordIssues.filter((issue) => !deletedIds.includes(issue.id));
+			photoRecordIssues = photoRecordIssues.filter(
+				(issue) => !deletedKeys.includes(issue.deleteKey)
+			);
 			await reloadPhotosAfterSuccessfulSave(
 				'壊れた写真レコードを削除しましたが、最新の一覧を読み込めませんでした。もう一度読み込んで確認してください。'
 			);
 		} catch {
-			photoRecordIssues = photoRecordIssues.filter((issue) => !deletedIds.includes(issue.id));
+			photoRecordIssues = photoRecordIssues.filter(
+				(issue) => !deletedKeys.includes(issue.deleteKey)
+			);
 
 			try {
 				await refreshPhotosWithIssues();
