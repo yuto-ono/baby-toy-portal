@@ -1,0 +1,57 @@
+export const TWINKLE_STEP_DURATION_MS = 720;
+export const TWINKLE_NOTE_DURATION_SECONDS = (TWINKLE_STEP_DURATION_MS - 80) / 1_000;
+
+const REST = null;
+
+export const TWINKLE_NOTES = [
+	261.63,
+	261.63,
+	392,
+	392,
+	440,
+	440,
+	392,
+	REST,
+	349.23,
+	349.23,
+	329.63,
+	329.63,
+	293.66,
+	293.66,
+	261.63,
+	REST,
+	392,
+	392,
+	349.23,
+	349.23,
+	329.63,
+	329.63,
+	293.66,
+	REST,
+	392,
+	392,
+	349.23,
+	349.23,
+	329.63,
+	329.63,
+	293.66,
+	REST,
+	261.63,
+	261.63,
+	392,
+	392,
+	440,
+	440,
+	392,
+	REST,
+	349.23,
+	349.23,
+	329.63,
+	329.63,
+	293.66,
+	293.66,
+	261.63,
+	REST
+] as const;
+
+export const TWINKLE_LOOP_DURATION_MS = TWINKLE_NOTES.length * TWINKLE_STEP_DURATION_MS;
