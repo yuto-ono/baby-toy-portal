@@ -1,16 +1,17 @@
-const NOTE_DURATION_SECONDS = 0.32;
-const NOTE_INTERVAL_MS = 360;
+import {
+	TWINKLE_NOTE_DURATION_SECONDS,
+	TWINKLE_NOTES,
+	TWINKLE_STEP_DURATION_MS
+} from './twinkleMelody';
+
 const PEAK_GAIN = 0.11;
 const SILENCE_GAIN = 0.0001;
 
-const twinkleNotes = [
-	261.63, 261.63, 392, 392, 440, 440, 392, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63,
-	392, 392, 349.23, 349.23, 329.63, 329.63, 293.66, 392, 392, 349.23, 349.23, 329.63, 329.63,
-	293.66, 261.63, 261.63, 392, 392, 440, 440, 392, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66,
-	261.63
-];
+type TwinklePlayerOptions = {
+	onStep?: (step: number) => void;
+};
 
-export function createTwinklePlayer() {
+export function createTwinklePlayer({ onStep }: TwinklePlayerOptions = {}) {
 	let context: AudioContext | null = null;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let noteIndex = 0;
@@ -27,20 +28,25 @@ export function createTwinklePlayer() {
 			return;
 		}
 
-		const now = context.currentTime;
-		const oscillator = context.createOscillator();
-		const gain = context.createGain();
-		oscillator.type = 'triangle';
-		oscillator.frequency.setValueAtTime(twinkleNotes[noteIndex], now);
-		gain.gain.setValueAtTime(SILENCE_GAIN, now);
-		gain.gain.exponentialRampToValueAtTime(PEAK_GAIN, now + 0.015);
-		gain.gain.exponentialRampToValueAtTime(SILENCE_GAIN, now + NOTE_DURATION_SECONDS);
-		oscillator.connect(gain);
-		gain.connect(context.destination);
-		oscillator.start(now);
-		oscillator.stop(now + NOTE_DURATION_SECONDS);
-		noteIndex = (noteIndex + 1) % twinkleNotes.length;
-		timer = setTimeout(playNote, NOTE_INTERVAL_MS);
+		onStep?.(noteIndex);
+		const frequency = TWINKLE_NOTES[noteIndex];
+		if (frequency !== null) {
+			const now = context.currentTime;
+			const oscillator = context.createOscillator();
+			const gain = context.createGain();
+			oscillator.type = 'triangle';
+			oscillator.frequency.setValueAtTime(frequency, now);
+			gain.gain.setValueAtTime(SILENCE_GAIN, now);
+			gain.gain.exponentialRampToValueAtTime(PEAK_GAIN, now + 0.015);
+			gain.gain.exponentialRampToValueAtTime(SILENCE_GAIN, now + TWINKLE_NOTE_DURATION_SECONDS);
+			oscillator.connect(gain);
+			gain.connect(context.destination);
+			oscillator.start(now);
+			oscillator.stop(now + TWINKLE_NOTE_DURATION_SECONDS);
+		}
+
+		noteIndex = (noteIndex + 1) % TWINKLE_NOTES.length;
+		timer = setTimeout(playNote, TWINKLE_STEP_DURATION_MS);
 	}
 
 	async function start() {

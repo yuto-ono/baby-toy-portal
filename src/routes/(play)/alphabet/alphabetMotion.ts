@@ -1,8 +1,36 @@
-export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+import { TWINKLE_STEP_DURATION_MS } from './twinkleMelody';
 
-export const LETTER_TRAVEL_DURATION_MS = 9_000;
-export const LETTER_SPAWN_INTERVAL_MS = 850;
-export const LETTER_BURST_COUNT = 14;
+export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') as Array<Letter>;
+export type Letter =
+	| 'A'
+	| 'B'
+	| 'C'
+	| 'D'
+	| 'E'
+	| 'F'
+	| 'G'
+	| 'H'
+	| 'I'
+	| 'J'
+	| 'K'
+	| 'L'
+	| 'M'
+	| 'N'
+	| 'O'
+	| 'P'
+	| 'Q'
+	| 'R'
+	| 'S'
+	| 'T'
+	| 'U'
+	| 'V'
+	| 'W'
+	| 'X'
+	| 'Y'
+	| 'Z';
+
+export const LETTER_TRAVEL_DURATION_MS = TWINKLE_STEP_DURATION_MS * 4;
+export const LETTER_BURST_COUNT = 28;
 
 const LETTER_COLORS = [
 	'#ff8f91',
@@ -15,21 +43,17 @@ const LETTER_COLORS = [
 	'#ef91ca'
 ];
 
-export type LetterDirection = 'from-left' | 'from-bottom';
-
 export type LetterMotion = {
 	id: number;
-	letter: string;
-	direction: LetterDirection;
+	letter: Letter;
 	color: string;
 	rotation: number;
 };
 
-export function createLetterMotion(id: number, random = Math.random): LetterMotion {
+export function createLetterMotion(id: number, letter: Letter, random = Math.random): LetterMotion {
 	return {
 		id,
-		letter: ALPHABET[Math.floor(random() * ALPHABET.length)],
-		direction: random() < 0.5 ? 'from-left' : 'from-bottom',
+		letter,
 		color: LETTER_COLORS[Math.floor(random() * LETTER_COLORS.length)],
 		rotation: Math.round(random() * 36 - 18)
 	};
@@ -40,8 +64,9 @@ export function createBurstMotions(source: LetterMotion, random = Math.random) {
 		id: source.id * 100 + index,
 		letter: source.letter,
 		color: source.color,
-		angle: Math.round(random() * 360),
-		distance: Math.round(7 + random() * 16),
-		rotation: Math.round(random() * 540 - 270)
+		offsetX: Math.round((random() - 0.5) * 34),
+		offsetY: Math.round((random() - 0.5) * 34),
+		rotation: Math.round(random() * 540 - 270),
+		scale: 0.8 + random() * 1.25
 	}));
 }

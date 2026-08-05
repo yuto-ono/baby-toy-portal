@@ -8,11 +8,10 @@ import {
 } from './alphabetMotion';
 
 describe('createLetterMotion', () => {
-	it('AからZの文字と決められた方向を作る', () => {
-		const motion = createLetterMotion(1, () => 0);
+	it('AからZの文字を作る', () => {
+		const motion = createLetterMotion(1, 'A', () => 0);
 
 		expect(ALPHABET).toContain(motion.letter);
-		expect(motion.direction).toBe('from-left');
 		expect(motion.id).toBe(1);
 	});
 
@@ -23,7 +22,7 @@ describe('createLetterMotion', () => {
 
 describe('createBurstMotions', () => {
 	it('タップした文字と同じ文字を複数作る', () => {
-		const source = createLetterMotion(2, () => 0.3);
+		const source = createLetterMotion(2, 'H', () => 0.3);
 
 		const burst = createBurstMotions(source, () => 0.5);
 

@@ -1,44 +1,53 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		LETTER_SPAWN_INTERVAL_MS,
 		LETTER_TRAVEL_DURATION_MS,
 		createBurstMotions,
-		createLetterMotion,
 		type LetterMotion
 	} from './alphabetMotion';
+	import { LANE_TOP_PERCENTAGES, createTimedLetter, type TimedLetter } from './alphabetTimeline';
+	import { findFemaleEnglishVoice, getLetterName } from './letterSpeech';
 	import { createTwinklePlayer } from './twinklePlayer';
 
 	type BurstParticle = ReturnType<typeof createBurstMotions>[number] & { x: number; y: number };
 
-	const twinklePlayer = createTwinklePlayer();
-	let letters = $state<LetterMotion[]>([]);
+	let letters = $state<TimedLetter[]>([]);
 	let particles = $state<BurstParticle[]>([]);
 	let nextId = 0;
+	let recentLanes = $state<number[]>([]);
+	let femaleVoice = $state<SpeechSynthesisVoice | null>(null);
 
-	function addLetter() {
-		const motion = createLetterMotion(nextId);
-		nextId += 1;
-		letters = [...letters, motion];
-		setTimeout(() => {
-			letters = letters.filter((letter) => letter.id !== motion.id);
-		}, LETTER_TRAVEL_DURATION_MS);
-	}
+	const twinklePlayer = createTwinklePlayer({
+		onStep(step) {
+			const letter = createTimedLetter(nextId, step, recentLanes);
+			if (!letter) {
+				return;
+			}
 
-	function speak(letter: string) {
-		if (!('speechSynthesis' in window)) {
+			nextId += 1;
+			recentLanes = [...recentLanes, letter.lane].slice(-(LANE_TOP_PERCENTAGES.length - 1));
+			letters = [...letters, letter];
+			setTimeout(() => {
+				letters = letters.filter((item) => item.id !== letter.id);
+			}, LETTER_TRAVEL_DURATION_MS);
+		}
+	});
+
+	function speak(letter: LetterMotion['letter']) {
+		if (!('speechSynthesis' in window) || femaleVoice === null) {
 			return;
 		}
 
 		window.speechSynthesis.cancel();
-		const utterance = new SpeechSynthesisUtterance(letter);
-		utterance.lang = 'en-US';
+		const utterance = new SpeechSynthesisUtterance(getLetterName(letter));
+		utterance.lang = femaleVoice.lang;
+		utterance.voice = femaleVoice;
 		utterance.rate = 0.78;
 		utterance.pitch = 1.25;
 		window.speechSynthesis.speak(utterance);
 	}
 
-	function popLetter(event: MouseEvent, letter: LetterMotion) {
+	function popLetter(event: MouseEvent | PointerEvent, letter: TimedLetter) {
 		void twinklePlayer.start();
 		speak(letter.letter);
 		letters = letters.filter((item) => item.id !== letter.id);
@@ -51,21 +60,41 @@
 		setTimeout(() => {
 			const burstIds = new Set(burst.map((particle) => particle.id));
 			particles = particles.filter((particle) => !burstIds.has(particle.id));
-		}, 900);
+		}, 1_150);
 	}
 
 	function startMusic() {
 		void twinklePlayer.start();
 	}
 
+	function handleLetterPointerDown(event: PointerEvent, letter: TimedLetter) {
+		event.stopPropagation();
+		void twinklePlayer.start();
+		popLetter(event, letter);
+	}
+
+	function handleLetterClick(event: MouseEvent, letter: TimedLetter) {
+		if (event.detail === 0) {
+			popLetter(event, letter);
+		}
+	}
+
 	onMount(() => {
-		addLetter();
-		const spawnTimer = window.setInterval(addLetter, LETTER_SPAWN_INTERVAL_MS);
+		const canSpeak = 'speechSynthesis' in window;
+		const updateVoice = () => {
+			femaleVoice = findFemaleEnglishVoice(window.speechSynthesis.getVoices());
+		};
+		if (canSpeak) {
+			updateVoice();
+			window.speechSynthesis.addEventListener('voiceschanged', updateVoice);
+		}
 
 		return () => {
-			window.clearInterval(spawnTimer);
+			if (canSpeak) {
+				window.speechSynthesis.removeEventListener('voiceschanged', updateVoice);
+				window.speechSynthesis.cancel();
+			}
 			twinklePlayer.destroy();
-			window.speechSynthesis?.cancel();
 		};
 	});
 </script>
@@ -76,12 +105,13 @@
 	{#each letters as letter (letter.id)}
 		<button
 			type="button"
-			class:from-left={letter.direction === 'from-left'}
-			class:from-bottom={letter.direction === 'from-bottom'}
 			class="letter"
 			style:--letter-color={letter.color}
-			style:--letter-rotation={`${letter.rotation}deg`}
-			onclick={(event) => popLetter(event, letter)}
+			style:--lane-top={`${LANE_TOP_PERCENTAGES[letter.lane]}%`}
+			style:--letter-travel-duration={`${LETTER_TRAVEL_DURATION_MS}ms`}
+			style:--reduced-letter-travel-duration={`${LETTER_TRAVEL_DURATION_MS * 2}ms`}
+			onpointerdown={(event) => handleLetterPointerDown(event, letter)}
+			onclick={(event) => handleLetterClick(event, letter)}
 			aria-label={`${letter.letter}を聞く`}
 		>
 			{letter.letter}
@@ -94,9 +124,10 @@
 			style:--particle-color={particle.color}
 			style:--particle-x={`${particle.x}px`}
 			style:--particle-y={`${particle.y}px`}
-			style:--particle-angle={`${particle.angle}deg`}
-			style:--particle-distance={`${particle.distance}rem`}
+			style:--particle-offset-x={`${particle.offsetX}rem`}
+			style:--particle-offset-y={`${particle.offsetY}rem`}
 			style:--particle-rotation={`${particle.rotation}deg`}
+			style:--particle-scale={particle.scale}
 			aria-hidden="true"
 		>
 			{particle.letter}
@@ -132,43 +163,33 @@
 	}
 
 	.letter {
-		--travel: max(100vw, 100dvh);
-
 		position: absolute;
+		top: var(--lane-top);
+		left: 0.75rem;
 		z-index: 2;
 		display: grid;
-		width: clamp(5.5rem, 16vw, 9rem);
+		width: clamp(6.75rem, 18vw, 10rem);
 		aspect-ratio: 1;
 		place-items: center;
 		padding: 0;
-		border: clamp(3px, 0.6vw, 5px) solid $ink;
+		border: clamp(3px, 0.5vw, 4px) solid var(--letter-color);
 		border-radius: 50%;
-		background: var(--letter-color);
-		box-shadow: 0 0.45rem 0 rgba($ink, 0.78);
+		background: #fffdf7;
+		box-shadow: 0 0.15rem 0.4rem rgba($ink, 0.14);
 		color: $ink;
 		cursor: pointer;
 		font: inherit;
-		font-size: clamp(3.3rem, 11vw, 6rem);
+		font-size: clamp(5.5rem, 15vw, 8.5rem);
 		font-weight: 900;
 		line-height: 1;
+		text-shadow: none;
 		-webkit-tap-highlight-color: transparent;
+		animation: travel-from-left var(--letter-travel-duration) linear forwards;
 
 		&:focus-visible {
 			outline: 5px solid #fff;
 			outline-offset: 5px;
 		}
-	}
-
-	.from-left {
-		top: clamp(5rem, 38%, 45%);
-		left: -10rem;
-		animation: travel-from-left #{LETTER_TRAVEL_DURATION_MS}ms linear forwards;
-	}
-
-	.from-bottom {
-		bottom: -10rem;
-		left: clamp(1rem, 30%, 55%);
-		animation: travel-from-bottom #{LETTER_TRAVEL_DURATION_MS}ms linear forwards;
 	}
 
 	.particle {
@@ -177,54 +198,48 @@
 		left: var(--particle-x);
 		top: var(--particle-y);
 		color: var(--particle-color);
-		font-size: clamp(1.75rem, 6vw, 3.5rem);
+		font-size: clamp(2.4rem, 8vw, 5rem);
 		font-weight: 900;
 		line-height: 1;
+		text-shadow: 0 0.08em 0 #fff;
 		pointer-events: none;
-		animation: scatter 850ms cubic-bezier(0.16, 0.72, 0.22, 1) forwards;
+		animation: scatter 1.1s cubic-bezier(0.12, 0.78, 0.21, 1) forwards;
 	}
 
 	@keyframes travel-from-left {
 		from {
-			transform: translate(0, 0) rotate(var(--letter-rotation));
+			transform: translateX(0);
 		}
 
 		to {
-			transform: translate(var(--travel), calc(var(--travel) * -0.28))
-				rotate(calc(var(--letter-rotation) + 180deg));
-		}
-	}
-
-	@keyframes travel-from-bottom {
-		from {
-			transform: translate(0, 0) rotate(var(--letter-rotation));
-		}
-
-		to {
-			transform: translate(calc(var(--travel) * 0.28), calc(var(--travel) * -1))
-				rotate(calc(var(--letter-rotation) - 180deg));
+			transform: translateX(110vw);
 		}
 	}
 
 	@keyframes scatter {
 		from {
 			opacity: 1;
-			transform: translate(-50%, -50%) rotate(0);
+			transform: translate(-50%, -50%) scale(0.35) rotate(0);
+		}
+
+		35% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1.25) rotate(90deg);
 		}
 
 		to {
 			opacity: 0;
 			transform: translate(
-					calc(-50% + cos(var(--particle-angle)) * var(--particle-distance)),
-					calc(-50% + sin(var(--particle-angle)) * var(--particle-distance))
+					calc(-50% + var(--particle-offset-x)),
+					calc(-50% + var(--particle-offset-y))
 				)
-				rotate(var(--particle-rotation));
+				scale(var(--particle-scale)) rotate(var(--particle-rotation));
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.letter {
-			animation-duration: calc(#{LETTER_TRAVEL_DURATION_MS}ms * 2);
+			animation-duration: var(--reduced-letter-travel-duration);
 		}
 
 		.particle {
