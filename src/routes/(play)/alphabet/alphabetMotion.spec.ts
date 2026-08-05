@@ -28,5 +28,6 @@ describe('createBurstMotions', () => {
 
 		expect(burst).toHaveLength(LETTER_BURST_COUNT);
 		expect(burst.every((particle) => particle.letter === source.letter)).toBe(true);
+		expect(burst.every((particle) => !('rotation' in particle))).toBe(true);
 	});
 });

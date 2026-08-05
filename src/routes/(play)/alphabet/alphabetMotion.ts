@@ -47,15 +47,13 @@ export type LetterMotion = {
 	id: number;
 	letter: Letter;
 	color: string;
-	rotation: number;
 };
 
 export function createLetterMotion(id: number, letter: Letter, random = Math.random): LetterMotion {
 	return {
 		id,
 		letter,
-		color: LETTER_COLORS[Math.floor(random() * LETTER_COLORS.length)],
-		rotation: Math.round(random() * 36 - 18)
+		color: LETTER_COLORS[Math.floor(random() * LETTER_COLORS.length)]
 	};
 }
 
@@ -66,7 +64,6 @@ export function createBurstMotions(source: LetterMotion, random = Math.random) {
 		color: source.color,
 		offsetX: Math.round((random() - 0.5) * 34),
 		offsetY: Math.round((random() - 0.5) * 34),
-		rotation: Math.round(random() * 540 - 270),
 		scale: 0.8 + random() * 1.25
 	}));
 }

@@ -126,7 +126,6 @@
 			style:--particle-y={`${particle.y}px`}
 			style:--particle-offset-x={`${particle.offsetX}rem`}
 			style:--particle-offset-y={`${particle.offsetY}rem`}
-			style:--particle-rotation={`${particle.rotation}deg`}
 			style:--particle-scale={particle.scale}
 			aria-hidden="true"
 		>
@@ -219,12 +218,12 @@
 	@keyframes scatter {
 		from {
 			opacity: 1;
-			transform: translate(-50%, -50%) scale(0.35) rotate(0);
+			transform: translate(-50%, -50%) scale(0.35);
 		}
 
 		35% {
 			opacity: 1;
-			transform: translate(-50%, -50%) scale(1.25) rotate(90deg);
+			transform: translate(-50%, -50%) scale(1.25);
 		}
 
 		to {
@@ -233,7 +232,7 @@
 					calc(-50% + var(--particle-offset-x)),
 					calc(-50% + var(--particle-offset-y))
 				)
-				scale(var(--particle-scale)) rotate(var(--particle-rotation));
+				scale(var(--particle-scale));
 		}
 	}
 
