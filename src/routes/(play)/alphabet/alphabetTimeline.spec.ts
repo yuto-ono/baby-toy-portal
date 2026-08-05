@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ALPHABET, LETTER_TRAVEL_DURATION_MS } from './alphabetMotion';
-import { createTimedLetter, getAlphabetSpawnStep, LANE_COUNT } from './alphabetTimeline';
-import { TWINKLE_LOOP_DURATION_MS, TWINKLE_STEP_DURATION_MS } from './twinkleMelody';
+import {
+	BARRAGE_END_STEP,
+	BARRAGE_LETTERS_PER_STEP,
+	BARRAGE_START_STEP,
+	createBarrageLetters,
+	createBarrageOrder,
+	createTimedLetter,
+	getAlphabetSpawnStep,
+	LANE_COUNT
+} from './alphabetTimeline';
+import { TWINKLE_LOOP_DURATION_MS, TWINKLE_NOTES, TWINKLE_STEP_DURATION_MS } from './twinkleMelody';
 
 describe('alphabet timeline', () => {
 	it('1曲につきAからZを一度ずつ順番に出す', () => {
@@ -42,5 +51,32 @@ describe('alphabet timeline', () => {
 		const letter = createTimedLetter(0, 0, [0, 1, 2], () => 0);
 
 		expect(letter?.lane).toBe(3);
+	});
+
+	it('Zの後と弾幕の後に準備・クールダウン時間を置く', () => {
+		const zStep = getAlphabetSpawnStep(ALPHABET.length - 1);
+
+		expect(BARRAGE_START_STEP - zStep).toBeGreaterThanOrEqual(3);
+		expect(TWINKLE_NOTES.length - 1 - BARRAGE_END_STEP).toBeGreaterThanOrEqual(3);
+	});
+
+	it('弾幕ではAからZをランダム順で2回ずつ流す', () => {
+		const order = createBarrageOrder(() => 0);
+
+		expect(order).toHaveLength(ALPHABET.length * 2);
+		for (const letter of ALPHABET) {
+			expect(order.filter((item) => item === letter)).toHaveLength(2);
+		}
+		expect(order.slice(0, ALPHABET.length)).not.toEqual(ALPHABET);
+	});
+
+	it('最終フレーズの各ステップで4文字ずつ弾幕を作る', () => {
+		const order = createBarrageOrder(() => 0);
+		const letters = createBarrageLetters(100, BARRAGE_START_STEP, order, [], () => 0);
+
+		expect(letters).toHaveLength(BARRAGE_LETTERS_PER_STEP);
+		expect(letters.every((letter) => letter.kind === 'barrage')).toBe(true);
+		expect(new Set(letters.map((letter) => letter.lane)).size).toBe(letters.length);
+		expect(createBarrageLetters(100, BARRAGE_START_STEP - 1, order, [], () => 0)).toEqual([]);
 	});
 });

@@ -5,7 +5,14 @@
 		createBurstMotions,
 		type LetterMotion
 	} from './alphabetMotion';
-	import { LANE_TOP_PERCENTAGES, createTimedLetter, type TimedLetter } from './alphabetTimeline';
+	import {
+		BARRAGE_START_STEP,
+		LANE_TOP_PERCENTAGES,
+		createBarrageLetters,
+		createBarrageOrder,
+		createTimedLetter,
+		type TimedLetter
+	} from './alphabetTimeline';
 	import { findFemaleEnglishVoice, getLetterName } from './letterSpeech';
 	import { createTwinklePlayer } from './twinklePlayer';
 
@@ -16,20 +23,36 @@
 	let nextId = 0;
 	let recentLanes = $state<number[]>([]);
 	let femaleVoice = $state<SpeechSynthesisVoice | null>(null);
+	let barrageOrder = createBarrageOrder();
 
 	const twinklePlayer = createTwinklePlayer({
 		onStep(step) {
-			const letter = createTimedLetter(nextId, step, recentLanes);
-			if (!letter) {
+			if (step === BARRAGE_START_STEP) {
+				barrageOrder = createBarrageOrder();
+			}
+
+			const regularLetter = createTimedLetter(nextId, step, recentLanes);
+			const barrageLetters = createBarrageLetters(
+				nextId + (regularLetter ? 1 : 0),
+				step,
+				barrageOrder,
+				recentLanes
+			);
+			const newLetters = regularLetter ? [regularLetter, ...barrageLetters] : barrageLetters;
+			if (newLetters.length === 0) {
 				return;
 			}
 
-			nextId += 1;
-			recentLanes = [...recentLanes, letter.lane].slice(-(LANE_TOP_PERCENTAGES.length - 1));
-			letters = [...letters, letter];
-			setTimeout(() => {
-				letters = letters.filter((item) => item.id !== letter.id);
-			}, LETTER_TRAVEL_DURATION_MS);
+			nextId += newLetters.length;
+			recentLanes = [...recentLanes, ...newLetters.map((letter) => letter.lane)].slice(
+				-(LANE_TOP_PERCENTAGES.length - 1)
+			);
+			letters = [...letters, ...newLetters];
+			for (const letter of newLetters) {
+				setTimeout(() => {
+					letters = letters.filter((item) => item.id !== letter.id);
+				}, LETTER_TRAVEL_DURATION_MS);
+			}
 		}
 	});
 
@@ -106,6 +129,7 @@
 		<button
 			type="button"
 			class="letter"
+			class:barrage={letter.kind === 'barrage'}
 			style:--letter-color={letter.color}
 			style:--lane-top={`${LANE_TOP_PERCENTAGES[letter.lane]}%`}
 			style:--letter-travel-duration={`${LETTER_TRAVEL_DURATION_MS}ms`}
@@ -188,6 +212,11 @@
 		&:focus-visible {
 			outline: 5px solid #fff;
 			outline-offset: 5px;
+		}
+
+		&.barrage {
+			width: clamp(4.5rem, 12vw, 7rem);
+			font-size: clamp(3.5rem, 10vw, 5.75rem);
 		}
 	}
 
