@@ -1,1 +1,5 @@
 * @yuto-ono
+
+# アルファベット遊びと専用音声
+/src/routes/(play)/alphabet/ @marimonon
+/static/audio/alphabet/ @marimonon
