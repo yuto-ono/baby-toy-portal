@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import {
-		LETTER_TRAVEL_DURATION_MS,
-		createBurstMotions,
-		type LetterMotion
-	} from './alphabetMotion';
+	import { LETTER_TRAVEL_DURATION_MS, createBurstMotions } from './alphabetMotion';
 	import {
 		BARRAGE_START_STEP,
 		LANE_TOP_PERCENTAGES,
@@ -13,7 +9,6 @@
 		createTimedLetter,
 		type TimedLetter
 	} from './alphabetTimeline';
-	import { findFemaleEnglishVoice, getLetterName } from './letterSpeech';
 	import { createTwinklePlayer } from './twinklePlayer';
 
 	type BurstParticle = ReturnType<typeof createBurstMotions>[number] & { x: number; y: number };
@@ -22,7 +17,6 @@
 	let particles = $state<BurstParticle[]>([]);
 	let nextId = 0;
 	let recentLanes = $state<number[]>([]);
-	let femaleVoice = $state<SpeechSynthesisVoice | null>(null);
 	let barrageOrder = createBarrageOrder();
 
 	const twinklePlayer = createTwinklePlayer({
@@ -56,23 +50,9 @@
 		}
 	});
 
-	function speak(letter: LetterMotion['letter']) {
-		if (!('speechSynthesis' in window) || femaleVoice === null) {
-			return;
-		}
-
-		window.speechSynthesis.cancel();
-		const utterance = new SpeechSynthesisUtterance(getLetterName(letter));
-		utterance.lang = femaleVoice.lang;
-		utterance.voice = femaleVoice;
-		utterance.rate = 0.78;
-		utterance.pitch = 1.25;
-		window.speechSynthesis.speak(utterance);
-	}
-
 	function popLetter(event: MouseEvent | PointerEvent, letter: TimedLetter) {
 		void twinklePlayer.start();
-		speak(letter.letter);
+		void twinklePlayer.playLetter(letter.letter);
 		letters = letters.filter((item) => item.id !== letter.id);
 		const burst = createBurstMotions(letter).map((particle) => ({
 			...particle,
@@ -92,7 +72,6 @@
 
 	function handleLetterPointerDown(event: PointerEvent, letter: TimedLetter) {
 		event.stopPropagation();
-		void twinklePlayer.start();
 		popLetter(event, letter);
 	}
 
@@ -103,20 +82,7 @@
 	}
 
 	onMount(() => {
-		const canSpeak = 'speechSynthesis' in window;
-		const updateVoice = () => {
-			femaleVoice = findFemaleEnglishVoice(window.speechSynthesis.getVoices());
-		};
-		if (canSpeak) {
-			updateVoice();
-			window.speechSynthesis.addEventListener('voiceschanged', updateVoice);
-		}
-
 		return () => {
-			if (canSpeak) {
-				window.speechSynthesis.removeEventListener('voiceschanged', updateVoice);
-				window.speechSynthesis.cancel();
-			}
 			twinklePlayer.destroy();
 		};
 	});
