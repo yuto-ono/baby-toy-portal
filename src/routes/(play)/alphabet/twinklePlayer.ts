@@ -8,6 +8,7 @@ import {
 } from './twinkleMelody';
 
 const PEAK_GAIN = 0.11;
+const LETTER_AUDIO_GAIN = PEAK_GAIN;
 const SILENCE_GAIN = 0.0001;
 
 type TwinklePlayerOptions = {
@@ -134,8 +135,11 @@ export function createTwinklePlayer({ onStep }: TwinklePlayerOptions = {}) {
 		}
 
 		const source = activeContext.createBufferSource();
+		const gain = activeContext.createGain();
 		source.buffer = buffer;
-		source.connect(activeContext.destination);
+		gain.gain.setValueAtTime(LETTER_AUDIO_GAIN, activeContext.currentTime);
+		source.connect(gain);
+		gain.connect(activeContext.destination);
 		source.onended = () => {
 			if (activeLetterSource === source) {
 				activeLetterSource = null;
