@@ -8,7 +8,7 @@ import {
 } from './twinkleMelody';
 
 const PEAK_GAIN = 0.11;
-const LETTER_AUDIO_GAIN = PEAK_GAIN;
+const LETTER_AUDIO_GAIN = PEAK_GAIN / 2;
 const SILENCE_GAIN = 0.0001;
 
 type TwinklePlayerOptions = {
