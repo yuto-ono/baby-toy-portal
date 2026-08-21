@@ -295,16 +295,18 @@
 		align-items: center;
 		gap: clamp(0.65rem, 2vw, 1.4rem);
 		padding: 0.35rem 1.4rem;
-		border: 4px solid $ink;
-		border-radius: 999px;
-		background: rgba(#fff, 0.95);
 		font-size: clamp(3.5rem, 7vw, 5.5rem);
 		font-weight: 900;
 		line-height: 1;
+		color: #7557e8;
 		opacity: 0;
 		transform: translateX(-50%) scale(0.5);
-		box-shadow: 0.35rem 0.35rem 0 #ffd86f;
+		filter: drop-shadow(0.12rem 0.16rem 0 #fff) drop-shadow(0.28rem 0.32rem 0 #ffd642);
 		pointer-events: none;
+
+		span {
+			display: inline-block;
+		}
 	}
 
 	.operator {
@@ -318,6 +320,18 @@
 		transition:
 			opacity 180ms ease,
 			transform 500ms cubic-bezier(0.18, 0.9, 0.28, 1.35);
+	}
+
+	.phase-equation .equation span {
+		animation: equation-digit-dance 650ms cubic-bezier(0.16, 0.86, 0.24, 1.25) both;
+
+		&:nth-child(2) {
+			animation-delay: 90ms;
+		}
+
+		&:nth-child(3) {
+			animation-delay: 180ms;
+		}
 	}
 
 	.phase-magic .equation {
@@ -400,20 +414,32 @@
 		width: clamp(12rem, 24vw, 19rem);
 		aspect-ratio: 1;
 		place-items: center;
-		border-radius: 50%;
-		background: rgba(#fff, 0.92);
 		color: #ef6578;
 		transform: translate(-50%, -50%);
-		box-shadow:
-			-5rem 1rem 0 -2rem rgba(#fff, 0.88),
-			5rem 1.5rem 0 -2.2rem rgba(#fff, 0.88),
-			0 0 2rem #ffe67a;
+		filter: drop-shadow(0 0 0.35rem #fff) drop-shadow(0 0 1.2rem #ffe45e);
 		animation: magic-pop $step-duration cubic-bezier(0.2, 0.85, 0.3, 1.2) both;
+
+		&::before,
+		&::after {
+			position: absolute;
+			inset: 18%;
+			border: clamp(0.35rem, 0.8vw, 0.65rem) solid #ffdc45;
+			border-radius: 50%;
+			content: '';
+			animation: magic-ring $step-duration ease-out both;
+		}
+
+		&::after {
+			border-color: #ff7fa2;
+			animation-delay: 120ms;
+		}
 	}
 
 	.magic-word {
+		z-index: 1;
 		font-size: clamp(3rem, 6vw, 5rem);
 		font-weight: 900;
+		transform: rotate(-5deg);
 	}
 
 	.magic-particle {
@@ -486,46 +512,77 @@
 	}
 
 	@keyframes left-enter {
-		from {
+		0% {
 			left: -48%;
-			transform: translateY(-50%);
+			transform: translateY(-50%) rotate(-18deg) scale(0.45);
 		}
-		to {
+		68% {
+			left: 7%;
+			transform: translateY(-62%) rotate(8deg) scale(1.18);
+		}
+		100% {
 			left: 4%;
-			transform: translateY(-50%);
+			transform: translateY(-50%) rotate(0deg) scale(1);
 		}
 	}
 
 	@keyframes right-enter {
-		from {
+		0% {
 			right: -48%;
-			transform: translateY(-50%);
+			transform: translateY(-50%) rotate(18deg) scale(0.45);
 		}
-		to {
+		68% {
+			right: 7%;
+			transform: translateY(-62%) rotate(-8deg) scale(1.18);
+		}
+		100% {
 			right: 4%;
-			transform: translateY(-50%);
+			transform: translateY(-50%) rotate(0deg) scale(1);
 		}
 	}
 
 	@keyframes left-move {
-		from {
+		0% {
 			left: 4%;
 			transform: translateY(-50%);
 		}
-		to {
+		55% {
+			transform: translateY(-66%) rotate(6deg) scale(1.12);
+		}
+		100% {
 			left: 16%;
 			transform: translateY(-50%);
 		}
 	}
 
 	@keyframes right-move {
-		from {
+		0% {
 			right: 4%;
 			transform: translateY(-50%);
 		}
-		to {
+		55% {
+			transform: translateY(-66%) rotate(-6deg) scale(1.12);
+		}
+		100% {
 			right: 16%;
 			transform: translateY(-50%);
+		}
+	}
+
+	@keyframes equation-digit-dance {
+		0% {
+			opacity: 0;
+			transform: translateY(-2.5rem) rotate(-18deg) scale(0.3);
+		}
+		55% {
+			opacity: 1;
+			transform: translateY(0.4rem) rotate(12deg) scale(1.35);
+		}
+		78% {
+			transform: translateY(-0.35rem) rotate(-7deg) scale(0.9);
+		}
+		100% {
+			transform: translateY(0) rotate(0deg) scale(1);
 		}
 	}
 
@@ -577,6 +634,17 @@
 		}
 	}
 
+	@keyframes magic-ring {
+		from {
+			opacity: 1;
+			transform: scale(0.15);
+		}
+		to {
+			opacity: 0;
+			transform: scale(2.2);
+		}
+	}
+
 	@keyframes particle-fly {
 		from {
 			opacity: 1;
@@ -589,11 +657,18 @@
 	}
 
 	@keyframes result-pop {
-		from {
+		0% {
 			opacity: 0;
-			transform: translate(-50%, -50%) scale(0.18) rotate(-7deg);
+			transform: translate(-50%, -50%) scale(0.08) rotate(-24deg);
 		}
-		to {
+		58% {
+			opacity: 1;
+			transform: translate(-50%, -56%) scale(1.42) rotate(12deg);
+		}
+		78% {
+			transform: translate(-50%, -48%) scale(0.86) rotate(-7deg);
+		}
+		100% {
 			opacity: 1;
 			transform: translate(-50%, -50%) scale(1) rotate(0deg);
 		}
@@ -604,8 +679,11 @@
 		100% {
 			transform: translate(-50%, -50%) scale(1);
 		}
-		50% {
-			transform: translate(-50%, -54%) scale(1.06);
+		35% {
+			transform: translate(-50%, -63%) scale(1.28) rotate(-6deg);
+		}
+		70% {
+			transform: translate(-50%, -46%) scale(0.92) rotate(5deg);
 		}
 	}
 
