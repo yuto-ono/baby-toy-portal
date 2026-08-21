@@ -17,12 +17,20 @@
 
 	const TAP_BURST_PARTICLES = [
 		'number',
+		'creature',
 		'star',
 		'number',
+		'creature',
 		'dot',
 		'number',
+		'creature',
 		'star',
 		'number',
+		'creature',
+		'dot',
+		'number',
+		'creature',
+		'star',
 		'dot'
 	] as const;
 
@@ -83,7 +91,15 @@
 		<div class="tap-burst" aria-hidden="true">
 			{#each TAP_BURST_PARTICLES as particle, index (index)}
 				<span class="tap-particle tap-particle-{index}">
-					{particle === 'number' ? value : particle === 'star' ? '★' : '●'}
+					{#if particle === 'number'}
+						{value}
+					{:else if particle === 'creature'}
+						{creature.symbol}
+					{:else if particle === 'star'}
+						★
+					{:else}
+						●
+					{/if}
 				</span>
 			{/each}
 		</div>
@@ -213,28 +229,52 @@
 		width: 1px;
 		height: 1px;
 		pointer-events: none;
+
+		&::before,
+		&::after {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: clamp(5rem, 10vw, 8rem);
+			aspect-ratio: 1;
+			border: clamp(0.45rem, 0.8vw, 0.7rem) solid #fff45d;
+			border-radius: 50%;
+			content: '';
+			transform: translate(-50%, -50%) scale(0.1);
+			animation: tap-shockwave 920ms ease-out both;
+		}
+
+		&::after {
+			border-color: #ff6d9a;
+			animation-delay: 100ms;
+		}
 	}
 
 	.tap-particle {
 		position: absolute;
 		color: #ff4e79;
-		font-size: clamp(1.8rem, 4vw, 3.3rem);
+		font-size: clamp(2.5rem, 5.8vw, 4.8rem);
 		font-weight: 900;
 		line-height: 1;
 		text-shadow:
 			0 0.14rem 0 #fff,
 			0 0 0.5rem #ffe45e;
-		animation: tap-particle-fly 900ms cubic-bezier(0.12, 0.7, 0.24, 1) both;
+		filter: drop-shadow(0 0 0.35rem #fff);
+		animation: tap-particle-fly 980ms cubic-bezier(0.12, 0.7, 0.24, 1) both;
 	}
 
-	@for $index from 0 through 7 {
+	@for $index from 0 through 15 {
 		.tap-particle-#{$index} {
-			--particle-angle: #{$index * 45deg - 90deg};
-			--particle-distance: #{7rem + ($index % 3) * 1.5rem};
-			animation-delay: #{$index * 18ms};
+			--particle-angle: #{$index * 22.5deg - 90deg};
+			--particle-counter-angle: #{90deg - $index * 22.5deg};
+			--particle-end-angle: #{450deg - $index * 22.5deg};
+			--particle-distance: #{10rem + ($index % 4) * 1.5rem};
+			animation-delay: #{$index * 10ms};
 
-			@if $index % 2 == 1 {
+			@if $index % 3 == 1 {
 				color: #ffbd24;
+			} @else if $index % 3 == 2 {
+				color: #7557e8;
 			}
 		}
 	}
@@ -341,20 +381,36 @@
 
 	@keyframes tap-particle-fly {
 		0% {
-			opacity: 0;
-			transform: rotate(var(--particle-angle)) translateX(0)
-				rotate(calc(-1 * var(--particle-angle))) scale(0.1);
-		}
-		18% {
 			opacity: 1;
+			transform: rotate(var(--particle-angle)) translateX(0) rotate(var(--particle-counter-angle))
+				scale(0.15);
 		}
-		72% {
+		22% {
+			opacity: 1;
+			transform: rotate(var(--particle-angle)) translateX(3rem)
+				rotate(var(--particle-counter-angle)) scale(1.45);
+		}
+		76% {
 			opacity: 1;
 		}
 		100% {
 			opacity: 0;
 			transform: rotate(var(--particle-angle)) translateX(var(--particle-distance))
-				rotate(calc(-1 * var(--particle-angle) + 320deg)) scale(1.35);
+				rotate(var(--particle-end-angle)) scale(1.1);
+		}
+	}
+
+	@keyframes tap-shockwave {
+		0% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(0.1);
+		}
+		65% {
+			opacity: 0.85;
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(3.8);
 		}
 	}
 
@@ -365,7 +421,9 @@
 		.number,
 		.number-digit,
 		.creature,
-		.tap-particle {
+		.tap-particle,
+		.tap-burst::before,
+		.tap-burst::after {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
 		}
