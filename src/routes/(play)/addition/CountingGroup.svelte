@@ -136,6 +136,8 @@
 	}
 
 	.number {
+		position: relative;
+		z-index: 2;
 		display: block;
 		min-width: clamp(4.5rem, 8vw, 6.4rem);
 		padding: 0.25rem 0.4rem;
@@ -168,6 +170,8 @@
 	}
 
 	.creatures {
+		position: relative;
+		z-index: 2;
 		display: flex;
 		width: var(--creature-row-width);
 		max-width: calc(100vw - 10rem);
@@ -199,7 +203,7 @@
 
 	.tap-burst {
 		position: absolute;
-		z-index: 20;
+		z-index: 1;
 		top: 50%;
 		left: 50%;
 		width: 1px;
