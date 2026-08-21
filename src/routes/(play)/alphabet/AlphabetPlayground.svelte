@@ -36,6 +36,9 @@
 			if (newLetters.length === 0) {
 				return;
 			}
+			if (regularLetter) {
+				void twinklePlayer.playLetter(regularLetter.letter);
+			}
 
 			nextId += newLetters.length;
 			recentLanes = [...recentLanes, ...newLetters.map((letter) => letter.lane)].slice(
@@ -132,6 +135,13 @@
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
+		background-image:
+			radial-gradient(circle, rgba(#ff9eaa, 0.24) 0 0.35rem, transparent 0.4rem),
+			radial-gradient(circle, rgba(#65c8bd, 0.2) 0 0.28rem, transparent 0.33rem);
+		background-position:
+			0 0,
+			2.7rem 2.7rem;
+		background-size: 5.4rem 5.4rem;
 		touch-action: manipulation;
 	}
 
@@ -141,14 +151,32 @@
 		left: 50%;
 		z-index: 1;
 		margin: 0;
-		padding: 0.5rem 1rem;
+		padding: 0.55rem 1.15rem;
+		border: 3px solid rgba(#ff9eaa, 0.65);
 		border-radius: 999px;
-		background: rgba(#fff, 0.88);
+		background: rgba(#fffafc, 0.94);
+		box-shadow:
+			0 0.3rem 0 rgba(#ff9eaa, 0.3),
+			0 0.45rem 1rem rgba($ink, 0.08);
 		color: $ink;
 		font-size: clamp(1rem, 3.5vw, 1.35rem);
 		font-weight: 800;
 		transform: translateX(-50%);
 		white-space: nowrap;
+
+		&::before,
+		&::after {
+			color: #f2aa18;
+			content: '✦';
+		}
+
+		&::before {
+			margin-right: 0.55rem;
+		}
+
+		&::after {
+			margin-left: 0.55rem;
+		}
 	}
 
 	.letter {
@@ -162,9 +190,12 @@
 		place-items: center;
 		padding: 0;
 		border: clamp(3px, 0.5vw, 4px) solid var(--letter-color);
-		border-radius: 50%;
-		background: #fffdf7;
-		box-shadow: 0 0.15rem 0.4rem rgba($ink, 0.14);
+		border-radius: 46% 54% 50% 50%;
+		background: linear-gradient(145deg, #fff 0 38%, #fff4dc 100%);
+		box-shadow:
+			inset 0.45rem 0.55rem 0 rgba(#fff, 0.75),
+			0 0.4rem 0 color-mix(in srgb, var(--letter-color) 35%, transparent),
+			0 0.65rem 1rem rgba($ink, 0.12);
 		color: $ink;
 		cursor: pointer;
 		font: inherit;
