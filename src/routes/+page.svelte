@@ -4,6 +4,7 @@
 	import Images from '@lucide/svelte/icons/images';
 	import Music from '@lucide/svelte/icons/music';
 	import LetterText from '@lucide/svelte/icons/letter-text';
+	import Plus from '@lucide/svelte/icons/plus';
 	import { TapEffects } from '$lib';
 	import PlayCard from './PlayCard.svelte';
 
@@ -39,9 +40,14 @@
 			<LetterText size={52} strokeWidth={2.75} />
 		{/snippet}
 
+		{#snippet additionIcon()}
+			<Plus size={58} strokeWidth={3.25} />
+		{/snippet}
+
 		<PlayCard href="/(play)/instruments" label="楽器で あそぼう" icon={musicIcon} />
 		<PlayCard href="/(play)/family-album" label="アルバムを 見よう" icon={albumIcon} />
 		<PlayCard href="/(play)/alphabet" label="アルファベットで あそぼう" icon={alphabetIcon} />
+		<PlayCard href="/(play)/addition" label="足し算で あそぼう" icon={additionIcon} />
 	</nav>
 
 	<TapEffects target={pageElement} />
