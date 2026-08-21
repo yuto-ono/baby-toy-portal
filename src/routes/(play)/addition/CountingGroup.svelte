@@ -15,6 +15,17 @@
 		onselect: () => void;
 	} = $props();
 
+	const TAP_BURST_PARTICLES = [
+		'number',
+		'star',
+		'number',
+		'dot',
+		'number',
+		'star',
+		'number',
+		'dot'
+	] as const;
+
 	function handlePointerDown(event: PointerEvent) {
 		event.stopPropagation();
 		onselect();
@@ -42,7 +53,11 @@
 		onclick={handleClick}
 		aria-label={`${value}を聞く`}
 	>
-		{value}
+		<span class="number-digits" aria-hidden="true">
+			{#each String(value) as digit, index (`${digit}-${index}`)}
+				<span class="number-digit" style:--digit-index={index}>{digit}</span>
+			{/each}
+		</span>
 	</button>
 
 	<div
@@ -63,6 +78,16 @@
 			</button>
 		{/each}
 	</div>
+
+	{#if focused}
+		<div class="tap-burst" aria-hidden="true">
+			{#each TAP_BURST_PARTICLES as particle, index (index)}
+				<span class="tap-particle tap-particle-{index}">
+					{particle === 'number' ? value : particle === 'star' ? '★' : '●'}
+				</span>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
@@ -70,6 +95,7 @@
 	$slot-size: clamp(3.7rem, 6.4vw, 5rem);
 
 	.counting-group {
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: clamp(0.45rem, 1.3vw, 1rem);
@@ -85,18 +111,20 @@
 		}
 
 		&.focused {
-			animation: group-wiggle 1s ease-in-out;
+			z-index: 10;
+			animation: group-wiggle 1s cubic-bezier(0.16, 0.86, 0.24, 1.22);
 
 			.number {
-				animation: number-pop 1s ease-in-out;
+				animation: number-pop 1s cubic-bezier(0.16, 0.86, 0.24, 1.22);
 			}
 
 			.creatures {
-				filter: drop-shadow(0 0 0.8rem #fff4a6);
+				filter: drop-shadow(0 0 1.2rem #fff36b);
 			}
 
 			.creature {
-				animation: creature-hop 0.55s ease-in-out calc(var(--creature-index) * 35ms) 2 alternate;
+				animation: creature-party 0.82s cubic-bezier(0.16, 0.86, 0.24, 1.2)
+					calc(var(--creature-index) * 28ms) both;
 			}
 		}
 	}
@@ -116,30 +144,35 @@
 	}
 
 	.number {
-		display: grid;
-		min-width: clamp(5rem, 9vw, 7rem);
-		min-height: clamp(5rem, 9vw, 7rem);
-		place-items: center;
-		padding: 0.2rem 0.6rem;
-		border: 4px solid $ink;
-		border-radius: 50%;
-		background: #fffef8;
+		display: block;
+		min-width: clamp(4.5rem, 8vw, 6.4rem);
+		padding: 0.25rem 0.4rem;
+		background: transparent;
 		color: #ec6274;
 		font-size: clamp(4rem, 8vw, 6.3rem);
 		font-weight: 900;
 		line-height: 1;
-		box-shadow: 0.35rem 0.35rem 0 #ffd86f;
+		filter: drop-shadow(0.16rem 0.2rem 0 #fff) drop-shadow(0.28rem 0.34rem 0 #ffd642);
+		animation: number-arrives 820ms cubic-bezier(0.16, 0.86, 0.24, 1.3) both;
+	}
+
+	.number-digits {
+		display: flex;
+		justify-content: center;
+	}
+
+	.number-digit {
+		display: inline-block;
+		transform-origin: 50% 85%;
+		animation: digit-dance 760ms ease-in-out calc(180ms + var(--digit-index) * 100ms) both;
 	}
 
 	.result .number {
-		min-width: clamp(6.4rem, 12vw, 9rem);
-		min-height: clamp(6.4rem, 12vw, 9rem);
-		background: #fff9c8;
+		min-width: clamp(5.8rem, 11vw, 8.4rem);
 		color: #e95370;
 		font-size: clamp(5.3rem, 10vw, 8rem);
-		box-shadow:
-			0 0 1.5rem #ffe260,
-			0.45rem 0.45rem 0 #ff91a4;
+		filter: drop-shadow(0 0 0.7rem #fff) drop-shadow(0 0 1.4rem #ffe260)
+			drop-shadow(0.35rem 0.42rem 0 #ff91a4);
 	}
 
 	.creatures {
@@ -148,9 +181,6 @@
 		max-width: calc(100vw - 10rem);
 		justify-content: center;
 		flex-wrap: wrap;
-		padding: 0.25rem;
-		border-radius: 1.3rem;
-		background: rgba(#fff, 0.62);
 	}
 
 	.creature {
@@ -160,6 +190,8 @@
 		place-items: center;
 		padding: 0;
 		background: transparent;
+		animation: creature-arrives 720ms cubic-bezier(0.16, 0.86, 0.24, 1.22)
+			calc(var(--creature-index) * 70ms) both;
 
 		span {
 			display: block;
@@ -173,46 +205,167 @@
 		font-size: clamp(3.3rem, 5.8vw, 4.8rem);
 	}
 
-	@keyframes number-pop {
-		0%,
+	.tap-burst {
+		position: absolute;
+		z-index: 20;
+		top: 50%;
+		left: 50%;
+		width: 1px;
+		height: 1px;
+		pointer-events: none;
+	}
+
+	.tap-particle {
+		position: absolute;
+		color: #ff4e79;
+		font-size: clamp(1.8rem, 4vw, 3.3rem);
+		font-weight: 900;
+		line-height: 1;
+		text-shadow:
+			0 0.14rem 0 #fff,
+			0 0 0.5rem #ffe45e;
+		animation: tap-particle-fly 900ms cubic-bezier(0.12, 0.7, 0.24, 1) both;
+	}
+
+	@for $index from 0 through 7 {
+		.tap-particle-#{$index} {
+			--particle-angle: #{$index * 45deg - 90deg};
+			--particle-distance: #{7rem + ($index % 3) * 1.5rem};
+			animation-delay: #{$index * 18ms};
+
+			@if $index % 2 == 1 {
+				color: #ffbd24;
+			}
+		}
+	}
+
+	@keyframes number-arrives {
+		0% {
+			opacity: 0;
+			transform: translateY(-4rem) scale(0.2) rotate(-22deg);
+		}
+		55% {
+			opacity: 1;
+			transform: translateY(0.5rem) scale(1.28) rotate(10deg);
+		}
+		75% {
+			transform: translateY(-0.35rem) scale(0.92) rotate(-6deg);
+		}
 		100% {
+			transform: translateY(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes digit-dance {
+		0% {
+			transform: translateY(-1.2rem) rotate(-15deg) scaleY(0.65);
+		}
+		35% {
+			transform: translateY(0.25rem) rotate(12deg) scaleY(1.2);
+		}
+		65% {
+			transform: translateY(-0.55rem) rotate(-8deg) scaleY(0.92);
+		}
+		100% {
+			transform: translateY(0) rotate(0deg) scaleY(1);
+		}
+	}
+
+	@keyframes creature-arrives {
+		0% {
+			opacity: 0;
+			transform: translateY(3.5rem) scale(0.1) rotate(-35deg);
+		}
+		58% {
+			opacity: 1;
+			transform: translateY(-1rem) scale(1.35) rotate(14deg);
+		}
+		78% {
+			transform: translateY(0.25rem) scale(0.9) rotate(-8deg);
+		}
+		100% {
+			transform: translateY(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes number-pop {
+		0% {
 			transform: scale(1) rotate(0deg);
 		}
-
-		25% {
-			transform: scale(1.16) rotate(-5deg);
+		28% {
+			transform: translateY(-1.2rem) scale(1.65) rotate(-14deg);
 		}
-
-		55% {
-			transform: scale(1.2) rotate(5deg);
+		58% {
+			transform: translateY(0.25rem) scale(1.25) rotate(12deg);
+		}
+		78% {
+			transform: translateY(-0.35rem) scale(1.48) rotate(-6deg);
+		}
+		100% {
+			transform: scale(1) rotate(0deg);
 		}
 	}
 
 	@keyframes group-wiggle {
-		0%,
-		100% {
+		0% {
 			filter: saturate(1);
 		}
 
-		50% {
-			filter: saturate(1.22) brightness(1.05);
+		32% {
+			filter: saturate(1.7) brightness(1.14);
+			transform: scale(1.25) rotate(-3deg);
+		}
+		62% {
+			transform: scale(1.12) rotate(3deg);
+		}
+		100% {
+			filter: saturate(1);
+			transform: scale(1) rotate(0deg);
 		}
 	}
 
-	@keyframes creature-hop {
-		from {
-			transform: translateY(0) rotate(-4deg) scale(1);
+	@keyframes creature-party {
+		0% {
+			transform: translateY(0) rotate(0deg) scale(1);
 		}
+		38% {
+			transform: translateY(-2.2rem) rotate(calc(-18deg + var(--creature-index) * 5deg)) scale(1.55);
+		}
+		68% {
+			transform: translateY(0.3rem) rotate(12deg) scale(1.22);
+		}
+		100% {
+			transform: translateY(0) rotate(0deg) scale(1);
+		}
+	}
 
-		to {
-			transform: translateY(-0.7rem) rotate(5deg) scale(1.12);
+	@keyframes tap-particle-fly {
+		0% {
+			opacity: 0;
+			transform: rotate(var(--particle-angle)) translateX(0)
+				rotate(calc(-1 * var(--particle-angle))) scale(0.1);
+		}
+		18% {
+			opacity: 1;
+		}
+		72% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+			transform: rotate(var(--particle-angle)) translateX(var(--particle-distance))
+				rotate(calc(-1 * var(--particle-angle) + 320deg)) scale(1.35);
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.counting-group.focused,
 		.counting-group.focused .number,
-		.counting-group.focused .creature {
+		.counting-group.focused .creature,
+		.number,
+		.number-digit,
+		.creature,
+		.tap-particle {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
 		}
