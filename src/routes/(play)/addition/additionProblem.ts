@@ -2,9 +2,19 @@ export const CREATURES = [
 	{ kind: 'rabbit', symbol: '🐰', label: 'うさぎ' },
 	{ kind: 'chick', symbol: '🐤', label: 'ひよこ' },
 	{ kind: 'cat', symbol: '🐱', label: 'ねこ' },
+	{ kind: 'dog', symbol: '🐶', label: 'いぬ' },
+	{ kind: 'panda', symbol: '🐼', label: 'パンダ' },
+	{ kind: 'lion', symbol: '🦁', label: 'ライオン' },
+	{ kind: 'frog', symbol: '🐸', label: 'かえる' },
+	{ kind: 'penguin', symbol: '🐧', label: 'ペンギン' },
 	{ kind: 'flower', symbol: '🌼', label: 'おはな' },
 	{ kind: 'cake', symbol: '🍰', label: 'ケーキ' },
-	{ kind: 'apple', symbol: '🍎', label: 'りんご' }
+	{ kind: 'apple', symbol: '🍎', label: 'りんご' },
+	{ kind: 'strawberry', symbol: '🍓', label: 'いちご' },
+	{ kind: 'banana', symbol: '🍌', label: 'バナナ' },
+	{ kind: 'doughnut', symbol: '🍩', label: 'ドーナツ' },
+	{ kind: 'car', symbol: '🚗', label: 'くるま' },
+	{ kind: 'balloon', symbol: '🎈', label: 'ふうせん' }
 ] as const;
 
 export type Creature = (typeof CREATURES)[number];

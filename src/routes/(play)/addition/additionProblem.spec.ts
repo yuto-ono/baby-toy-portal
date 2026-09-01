@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createAdditionProblem } from './additionProblem';
+import { CREATURES, createAdditionProblem } from './additionProblem';
 
 describe('createAdditionProblem', () => {
 	it('左右の数に0を含まず、答えを10以下にする', () => {
@@ -28,5 +28,13 @@ describe('createAdditionProblem', () => {
 
 		expect([next.left, next.right]).not.toEqual([previous.left, previous.right]);
 		expect(next.left + next.right).toBe(next.total);
+	});
+
+	it('登録した絵文字をすべて選べる', () => {
+		const selectedCreatures = CREATURES.map((_, index) =>
+			createAdditionProblem(null, () => (index + 0.5) / CREATURES.length)
+		).map((problem) => problem.creature);
+
+		expect(selectedCreatures).toEqual(CREATURES);
 	});
 });
