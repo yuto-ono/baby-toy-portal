@@ -28,6 +28,7 @@ export type AdditionProblem = {
 
 const MIN_TOTAL = 2;
 const MAX_TOTAL = 10;
+const MIN_ANSWER = 1;
 
 function selectIndex(length: number, random: () => number) {
 	const value = random();
@@ -57,4 +58,17 @@ export function createAdditionProblem(
 		total,
 		creature: CREATURES[selectIndex(CREATURES.length, random)]
 	};
+}
+
+export function createAnswerOptions(
+	correctAnswer: number,
+	random = Math.random
+): readonly [number, number] {
+	const incorrectAnswers = Array.from(
+		{ length: MAX_TOTAL - MIN_ANSWER + 1 },
+		(_, index) => index + MIN_ANSWER
+	).filter((answer) => answer !== correctAnswer);
+	const incorrectAnswer = incorrectAnswers[selectIndex(incorrectAnswers.length, random)];
+
+	return random() < 0.5 ? [correctAnswer, incorrectAnswer] : [incorrectAnswer, correctAnswer];
 }
