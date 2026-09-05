@@ -1,22 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { createAdditionAudioPlayer } from './additionAudioPlayer';
-	import { createAdditionProblem } from './additionProblem';
+	import { createAdditionProblem, createAnswerOptions } from './additionProblem';
 	import {
 		ADDITION_STEP_DURATION_MS,
 		ADDITION_STEPS,
 		getAdditionAnnouncement,
 		type AdditionPhase
 	} from './additionTimeline';
+	import AnswerCelebrationBackground from './AnswerCelebrationBackground.svelte';
+	import AnswerChoices from './AnswerChoices.svelte';
 	import CountingGroup from './CountingGroup.svelte';
 
 	type FocusedGroup = 'left' | 'right' | 'result';
 
 	const TAP_PAUSE_DURATION_MS = 1_000;
 	const MAGIC_PARTICLES = ['★', '●', '✦', '★', '●', '✦', '★', '●'] as const;
+	const initialProblem = createAdditionProblem();
 
 	let started = $state(false);
-	let problem = $state(createAdditionProblem());
+	let problem = $state(initialProblem);
+	let answerOptions = $state(createAnswerOptions(initialProblem.total));
+	let bonusEarned = $state(false);
 	let stepIndex = $state(0);
 	let focusedGroup = $state<FocusedGroup | null>(null);
 	let focusVersion = $state(0);
@@ -53,6 +58,8 @@
 			} else {
 				const nextProblem = createAdditionProblem(problem);
 				problem = nextProblem;
+				answerOptions = createAnswerOptions(nextProblem.total);
+				bonusEarned = false;
 				stepIndex = 0;
 				void additionAudioPlayer.prepare(nextProblem);
 				playPhase(nextProblem, ADDITION_STEPS[0]);
@@ -104,6 +111,14 @@
 		}, TAP_PAUSE_DURATION_MS);
 	}
 
+	function handleCorrectAnswer() {
+		if (stepIndex > 5 || bonusEarned) {
+			return;
+		}
+
+		bonusEarned = true;
+	}
+
 	onMount(() => {
 		return () => {
 			clearStepTimer();
@@ -124,6 +139,10 @@
 	<div class="sky-decoration decoration-one" aria-hidden="true">☁</div>
 	<div class="sky-decoration decoration-two" aria-hidden="true">☁</div>
 
+	{#if bonusEarned && stepIndex >= 6 && stepIndex <= 9}
+		<AnswerCelebrationBackground answer={problem.total} />
+	{/if}
+
 	{#if !started}
 		<button
 			type="button"
@@ -138,11 +157,13 @@
 			<span class="start-hand" aria-hidden="true">👆</span>
 		</button>
 	{:else}
-		<div class="equation" aria-live="polite">
-			<span>{problem.left}</span>
-			<span class="operator">+</span>
-			<span>{problem.right}</span>
-		</div>
+		{#if stepIndex <= 5}
+			<div class="equation" aria-live="polite">
+				<span>{problem.left}</span>
+				<span class="operator">+</span>
+				<span>{problem.right}</span>
+			</div>
+		{/if}
 
 		{#if stepIndex <= 5}
 			<div class="traveler left-traveler">
@@ -181,6 +202,14 @@
 			</div>
 		{/if}
 
+		{#if stepIndex <= 5}
+			<AnswerChoices
+				options={answerOptions}
+				correctAnswer={problem.total}
+				oncorrect={handleCorrectAnswer}
+			/>
+		{/if}
+
 		{#if stepIndex >= 6}
 			<div class="result-group">
 				<span class="sparkle sparkle-one" aria-hidden="true">✦</span>
@@ -217,6 +246,7 @@
 
 	.sky-decoration {
 		position: absolute;
+		z-index: 1;
 		color: rgba(#fff, 0.88);
 		font-size: clamp(5rem, 10vw, 8rem);
 		line-height: 1;
@@ -299,8 +329,7 @@
 		font-weight: 900;
 		line-height: 1;
 		color: #7557e8;
-		opacity: 0;
-		transform: translateX(-50%) scale(0.5);
+		transform: translateX(-50%);
 		filter: drop-shadow(0.12rem 0.16rem 0 #fff) drop-shadow(0.28rem 0.32rem 0 #ffd642);
 		pointer-events: none;
 
@@ -313,15 +342,7 @@
 		color: #ef6578;
 	}
 
-	.phase-equation .equation,
-	.phase-magic .equation {
-		opacity: 1;
-		transform: translateX(-50%) scale(1);
-		transition:
-			opacity 180ms ease,
-			transform 500ms cubic-bezier(0.18, 0.9, 0.28, 1.35);
-	}
-
+	.phase-left-arrives .equation span,
 	.phase-equation .equation span {
 		animation: equation-digit-dance 650ms cubic-bezier(0.16, 0.86, 0.24, 1.25) both;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CREATURES, createAdditionProblem } from './additionProblem';
+import { CREATURES, createAdditionProblem, createAnswerOptions } from './additionProblem';
 
 describe('createAdditionProblem', () => {
 	it('左右の数に0を含まず、答えを10以下にする', () => {
@@ -36,5 +36,27 @@ describe('createAdditionProblem', () => {
 		).map((problem) => problem.creature);
 
 		expect(selectedCreatures).toEqual(CREATURES);
+	});
+});
+
+describe('createAnswerOptions', () => {
+	it('正解と、1から10までの正解ではない数字を1つずつ作る', () => {
+		for (let correctAnswer = 2; correctAnswer <= 10; correctAnswer += 1) {
+			const options = createAnswerOptions(correctAnswer, () => 0);
+
+			expect(options).toHaveLength(2);
+			expect(options).toContain(correctAnswer);
+			expect(new Set(options).size).toBe(2);
+			expect(options.every((answer) => answer >= 1 && answer <= 10)).toBe(true);
+		}
+	});
+
+	it('正解を左右どちらにも配置できる', () => {
+		const randomValues = [0, 0.25];
+		const correctFirst = createAnswerOptions(5, () => randomValues.shift() ?? 0);
+		const incorrectFirst = createAnswerOptions(5, () => 0.75);
+
+		expect(correctFirst[0]).toBe(5);
+		expect(incorrectFirst[1]).toBe(5);
 	});
 });
