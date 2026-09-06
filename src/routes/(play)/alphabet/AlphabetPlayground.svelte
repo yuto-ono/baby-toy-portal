@@ -225,10 +225,9 @@
 		font-size: clamp(5.5rem, 15vw, 8.5rem);
 		font-weight: 900;
 		line-height: 1;
-		-webkit-text-stroke: clamp(1px, 0.22vw, 2px) #fff;
 		text-shadow:
-			0 0.055em 0 color-mix(in srgb, var(--letter-color) 68%, $ink),
-			0 0.1em 0.12em rgba($ink, 0.2);
+			0 0.045em 0 color-mix(in srgb, var(--letter-color) 55%, $ink),
+			0 0.09em 0.12em rgba($ink, 0.14);
 		-webkit-tap-highlight-color: transparent;
 		animation: cute-wiggle 720ms ease-in-out var(--letter-wiggle-delay) infinite;
 
@@ -247,7 +246,7 @@
 		font-size: clamp(2.4rem, 8vw, 5rem);
 		font-weight: 900;
 		line-height: 1;
-		text-shadow: 0 0.08em 0 #fff;
+		text-shadow: 0 0.06em 0.1em rgba($ink, 0.16);
 		pointer-events: none;
 		animation: scatter 1.1s cubic-bezier(0.12, 0.78, 0.21, 1) forwards;
 	}
