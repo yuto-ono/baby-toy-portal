@@ -95,20 +95,25 @@
 	<p class="hint">ながれてくる もじを タップしてね</p>
 
 	{#each letters as letter (letter.id)}
-		<button
-			type="button"
-			class="letter"
+		<div
+			class="letter-track"
 			class:barrage={letter.kind === 'barrage'}
 			style:--letter-color={letter.color}
 			style:--lane-top={`${LANE_TOP_PERCENTAGES[letter.lane]}%`}
 			style:--letter-travel-duration={`${LETTER_TRAVEL_DURATION_MS}ms`}
 			style:--reduced-letter-travel-duration={`${LETTER_TRAVEL_DURATION_MS * 2}ms`}
-			onpointerdown={(event) => handleLetterPointerDown(event, letter)}
-			onclick={(event) => handleLetterClick(event, letter)}
-			aria-label={`${letter.letter}を聞く`}
+			style:--letter-wiggle-delay={`${-(letter.id % 5) * 120}ms`}
 		>
-			{letter.letter}
-		</button>
+			<button
+				type="button"
+				class="letter"
+				onpointerdown={(event) => handleLetterPointerDown(event, letter)}
+				onclick={(event) => handleLetterClick(event, letter)}
+				aria-label={`${letter.letter}を聞く`}
+			>
+				{letter.letter}
+			</button>
+		</div>
 	{/each}
 
 	{#each particles as particle (particle.id)}
@@ -179,41 +184,56 @@
 		}
 	}
 
-	.letter {
+	.letter-track {
 		position: absolute;
 		top: var(--lane-top);
 		left: 0.75rem;
 		z-index: 2;
-		display: grid;
 		width: clamp(6.75rem, 18vw, 10rem);
 		aspect-ratio: 1;
+		animation: travel-from-left var(--letter-travel-duration) linear forwards;
+
+		&.barrage {
+			width: clamp(4.5rem, 12vw, 7rem);
+
+			.letter {
+				font-size: clamp(3.5rem, 10vw, 5.75rem);
+			}
+		}
+	}
+
+	.letter {
+		display: grid;
+		width: 100%;
+		height: 100%;
 		place-items: center;
 		padding: 0;
 		border: clamp(3px, 0.5vw, 4px) solid var(--letter-color);
 		border-radius: 46% 54% 50% 50%;
-		background: linear-gradient(145deg, #fff 0 38%, #fff4dc 100%);
+		background: linear-gradient(
+			145deg,
+			#fff 0 32%,
+			color-mix(in srgb, var(--letter-color) 18%, #fff) 100%
+		);
 		box-shadow:
 			inset 0.45rem 0.55rem 0 rgba(#fff, 0.75),
-			0 0.4rem 0 color-mix(in srgb, var(--letter-color) 35%, transparent),
+			0 0.4rem 0 color-mix(in srgb, var(--letter-color) 48%, transparent),
 			0 0.65rem 1rem rgba($ink, 0.12);
-		color: $ink;
+		color: var(--letter-color);
 		cursor: pointer;
 		font: inherit;
 		font-size: clamp(5.5rem, 15vw, 8.5rem);
 		font-weight: 900;
 		line-height: 1;
-		text-shadow: none;
+		text-shadow:
+			0 0.045em 0 color-mix(in srgb, var(--letter-color) 55%, $ink),
+			0 0.09em 0.12em rgba($ink, 0.14);
 		-webkit-tap-highlight-color: transparent;
-		animation: travel-from-left var(--letter-travel-duration) linear forwards;
+		animation: cute-wiggle 720ms ease-in-out var(--letter-wiggle-delay) infinite;
 
 		&:focus-visible {
 			outline: 5px solid #fff;
 			outline-offset: 5px;
-		}
-
-		&.barrage {
-			width: clamp(4.5rem, 12vw, 7rem);
-			font-size: clamp(3.5rem, 10vw, 5.75rem);
 		}
 	}
 
@@ -226,7 +246,7 @@
 		font-size: clamp(2.4rem, 8vw, 5rem);
 		font-weight: 900;
 		line-height: 1;
-		text-shadow: 0 0.08em 0 #fff;
+		text-shadow: 0 0.06em 0.1em rgba($ink, 0.16);
 		pointer-events: none;
 		animation: scatter 1.1s cubic-bezier(0.12, 0.78, 0.21, 1) forwards;
 	}
@@ -238,6 +258,25 @@
 
 		to {
 			transform: translateX(110vw);
+		}
+	}
+
+	@keyframes cute-wiggle {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-2deg) scale(1);
+		}
+
+		25% {
+			transform: translateY(-0.28rem) rotate(2deg) scale(1.025);
+		}
+
+		50% {
+			transform: translateY(0.12rem) rotate(-1deg) scale(0.99);
+		}
+
+		75% {
+			transform: translateY(-0.18rem) rotate(1.5deg) scale(1.015);
 		}
 	}
 
@@ -263,8 +302,12 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.letter {
+		.letter-track {
 			animation-duration: var(--reduced-letter-travel-duration);
+		}
+
+		.letter {
+			animation: none;
 		}
 
 		.particle {
