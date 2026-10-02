@@ -37,6 +37,13 @@ describe('createAdditionProblem', () => {
 
 		expect(selectedCreatures).toEqual(CREATURES);
 	});
+
+	it('数えやすい可愛い絵文字を33種類以上用意し、避けたい絵文字を含めない', () => {
+		expect(CREATURES.length).toBeGreaterThanOrEqual(33);
+		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🐼');
+		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🫧');
+		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🐾');
+	});
 });
 
 describe('createAnswerOptions', () => {

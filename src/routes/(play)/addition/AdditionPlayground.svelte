@@ -117,6 +117,7 @@
 		}
 
 		bonusEarned = true;
+		void additionAudioPlayer.playCorrect();
 	}
 
 	onMount(() => {
@@ -173,6 +174,7 @@
 						creature={problem.creature}
 						placement="left"
 						focused={focusedGroup === 'left'}
+						celebrating={bonusEarned}
 						onselect={() => focus('left', problem.left)}
 					/>
 				{/key}
@@ -187,6 +189,7 @@
 						creature={problem.creature}
 						placement="right"
 						focused={focusedGroup === 'right'}
+						celebrating={bonusEarned}
 						onselect={() => focus('right', problem.right)}
 					/>
 				{/key}
@@ -221,6 +224,7 @@
 						creature={problem.creature}
 						placement="result"
 						focused={focusedGroup === 'result'}
+						celebrating={bonusEarned && stepIndex === 6}
 						onselect={() => focus('result', problem.total)}
 					/>
 				{/key}

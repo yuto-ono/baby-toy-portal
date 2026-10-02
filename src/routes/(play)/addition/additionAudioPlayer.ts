@@ -6,6 +6,10 @@ import { getEquationAudioPath, getMagicAudioPath, getNumberAudioPath } from './a
 const AUTOMATIC_AUDIO_GAIN = 0.035;
 const TAP_AUDIO_GAIN = 0.055;
 const MAGIC_AUDIO_GAIN = 0.03;
+const CORRECT_CHIME_GAIN = 0.09;
+const CORRECT_CHIME_NOTE_DURATION_SECONDS = 0.16;
+const CORRECT_CHIME_NOTE_GAP_SECONDS = 0.11;
+const CORRECT_CHIME_FREQUENCIES = [523.25, 659.25, 783.99] as const;
 
 export function createAdditionAudioPlayer() {
 	let context: AudioContext | null = null;
@@ -128,6 +132,29 @@ export function createAdditionAudioPlayer() {
 		source.start();
 	}
 
+	async function playCorrect() {
+		const activeContext = await getReadyContext();
+		if (activeContext === null) {
+			return;
+		}
+
+		for (const [index, frequency] of CORRECT_CHIME_FREQUENCIES.entries()) {
+			const startTime = activeContext.currentTime + index * CORRECT_CHIME_NOTE_GAP_SECONDS;
+			const stopTime = startTime + CORRECT_CHIME_NOTE_DURATION_SECONDS;
+			const oscillator = activeContext.createOscillator();
+			const gain = activeContext.createGain();
+			oscillator.type = 'sine';
+			oscillator.frequency.setValueAtTime(frequency, startTime);
+			gain.gain.setValueAtTime(0.001, startTime);
+			gain.gain.exponentialRampToValueAtTime(CORRECT_CHIME_GAIN, startTime + 0.02);
+			gain.gain.exponentialRampToValueAtTime(0.001, stopTime);
+			oscillator.connect(gain);
+			gain.connect(activeContext.destination);
+			oscillator.start(startTime);
+			oscillator.stop(stopTime);
+		}
+	}
+
 	function destroy() {
 		playVersion += 1;
 		bufferRequests.clear();
@@ -144,5 +171,5 @@ export function createAdditionAudioPlayer() {
 		}
 	}
 
-	return { prepare, play, destroy };
+	return { prepare, play, playCorrect, destroy };
 }

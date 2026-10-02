@@ -6,12 +6,14 @@
 		creature,
 		placement,
 		focused = false,
+		celebrating = false,
 		onselect
 	}: {
 		value: number;
 		creature: Creature;
 		placement: 'left' | 'right' | 'result';
 		focused?: boolean;
+		celebrating?: boolean;
 		onselect: () => void;
 	} = $props();
 
@@ -34,6 +36,7 @@
 <div
 	class="counting-group"
 	class:focused
+	class:celebrating
 	class:left={placement === 'left'}
 	class:right={placement === 'right'}
 	class:result={placement === 'result'}
@@ -62,6 +65,10 @@
 				type="button"
 				class="creature"
 				style:--creature-index={index}
+				class:arrival-hop={index % 4 === 0}
+				class:arrival-spin={index % 4 === 1}
+				class:arrival-swoop={index % 4 === 2}
+				class:arrival-wiggle={index % 4 === 3}
 				onpointerdown={handlePointerDown}
 				onclick={handleClick}
 				aria-label={`${creature.label}${index + 1}こめ、${value}を聞く`}
@@ -117,6 +124,15 @@
 			.creature {
 				animation: creature-party 0.82s cubic-bezier(0.16, 0.86, 0.24, 1.2)
 					calc(var(--creature-index) * 28ms) both;
+			}
+		}
+
+		&.celebrating {
+			z-index: 11;
+
+			.creature {
+				animation: correct-creature-dance 1.15s cubic-bezier(0.16, 0.86, 0.24, 1.2)
+					calc(var(--creature-index) * 75ms) both;
 			}
 		}
 	}
@@ -186,8 +202,10 @@
 		place-items: center;
 		padding: 0;
 		background: transparent;
-		animation: creature-arrives 720ms cubic-bezier(0.16, 0.86, 0.24, 1.22)
-			calc(var(--creature-index) * 70ms) both;
+		animation-duration: 720ms;
+		animation-timing-function: cubic-bezier(0.16, 0.86, 0.24, 1.22);
+		animation-delay: calc(var(--creature-index) * 70ms);
+		animation-fill-mode: both;
 
 		span {
 			display: block;
@@ -271,7 +289,23 @@
 		}
 	}
 
-	@keyframes creature-arrives {
+	.creature.arrival-hop {
+		animation-name: creature-arrives-hop;
+	}
+
+	.creature.arrival-spin {
+		animation-name: creature-arrives-spin;
+	}
+
+	.creature.arrival-swoop {
+		animation-name: creature-arrives-swoop;
+	}
+
+	.creature.arrival-wiggle {
+		animation-name: creature-arrives-wiggle;
+	}
+
+	@keyframes creature-arrives-hop {
 		0% {
 			opacity: 0;
 			transform: translateY(3.5rem) scale(0.1) rotate(-35deg);
@@ -285,6 +319,51 @@
 		}
 		100% {
 			transform: translateY(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes creature-arrives-spin {
+		0% {
+			opacity: 0;
+			transform: translateX(-3rem) scale(0.2) rotate(-180deg);
+		}
+		60% {
+			opacity: 1;
+			transform: translateX(0.35rem) scale(1.28) rotate(26deg);
+		}
+		100% {
+			transform: translateX(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes creature-arrives-swoop {
+		0% {
+			opacity: 0;
+			transform: translateY(-3.5rem) scale(0.25) rotate(35deg);
+		}
+		58% {
+			opacity: 1;
+			transform: translateY(0.5rem) scale(1.32) rotate(-12deg);
+		}
+		100% {
+			transform: translateY(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes creature-arrives-wiggle {
+		0% {
+			opacity: 0;
+			transform: translateX(3rem) scale(0.2) rotate(25deg);
+		}
+		42% {
+			opacity: 1;
+			transform: translateX(-0.55rem) scale(1.18) rotate(-16deg);
+		}
+		68% {
+			transform: translateX(0.3rem) scale(1.08) rotate(10deg);
+		}
+		100% {
+			transform: translateX(0) scale(1) rotate(0deg);
 		}
 	}
 
@@ -339,6 +418,21 @@
 		}
 	}
 
+	@keyframes correct-creature-dance {
+		0% {
+			transform: translateY(0) scale(1) rotate(0deg);
+		}
+		35% {
+			transform: translateY(-3.1rem) scale(1.65) rotate(180deg);
+		}
+		66% {
+			transform: translateY(0.45rem) scale(1.2) rotate(300deg);
+		}
+		100% {
+			transform: translateY(0) scale(1) rotate(360deg);
+		}
+	}
+
 	@keyframes tap-particle-fly {
 		0% {
 			opacity: 1;
@@ -367,6 +461,7 @@
 		.number,
 		.number-digit,
 		.creature,
+		.counting-group.celebrating .creature,
 		.tap-particle {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
