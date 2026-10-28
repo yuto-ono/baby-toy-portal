@@ -22,6 +22,7 @@
 	let problem = $state(initialProblem);
 	let answerOptions = $state(createAnswerOptions(initialProblem.total));
 	let bonusEarned = $state(false);
+	let madeMistake = $state(false);
 	let stepIndex = $state(0);
 	let focusedGroup = $state<FocusedGroup | null>(null);
 	let focusVersion = $state(0);
@@ -60,6 +61,7 @@
 				problem = nextProblem;
 				answerOptions = createAnswerOptions(nextProblem.total);
 				bonusEarned = false;
+				madeMistake = false;
 				stepIndex = 0;
 				void additionAudioPlayer.prepare(nextProblem);
 				playPhase(nextProblem, ADDITION_STEPS[0]);
@@ -120,6 +122,10 @@
 		void additionAudioPlayer.playCorrect();
 	}
 
+	function handleWrongAnswer() {
+		madeMistake = true;
+	}
+
 	onMount(() => {
 		return () => {
 			clearStepTimer();
@@ -132,16 +138,32 @@
 </script>
 
 <section
-	class="playground phase-{phase}"
+	class="playground phase-{phase} background-{problem.background}"
 	class:started
 	class:paused={focusedGroup !== null}
 	aria-label="足し算で遊ぶ場所"
 >
-	<div class="sky-decoration decoration-one" aria-hidden="true">☁</div>
-	<div class="sky-decoration decoration-two" aria-hidden="true">☁</div>
+	<div class="scene-decoration decoration-one" aria-hidden="true">
+		{problem.background === 'meadow'
+			? '🌼'
+			: problem.background === 'candy'
+				? '🍬'
+				: problem.background === 'ocean'
+					? '🐠'
+					: '⭐'}
+	</div>
+	<div class="scene-decoration decoration-two" aria-hidden="true">
+		{problem.background === 'meadow'
+			? '🌈'
+			: problem.background === 'candy'
+				? '🎀'
+				: problem.background === 'ocean'
+					? '🐳'
+					: '🌙'}
+	</div>
 
-	{#if bonusEarned && stepIndex >= 6 && stepIndex <= 9}
-		<AnswerCelebrationBackground answer={problem.total} />
+	{#if bonusEarned}
+		<AnswerCelebrationBackground answer={problem.total} firstTry={!madeMistake} />
 	{/if}
 
 	{#if !started}
@@ -210,6 +232,7 @@
 				options={answerOptions}
 				correctAnswer={problem.total}
 				oncorrect={handleCorrectAnswer}
+				onwrong={handleWrongAnswer}
 			/>
 		{/if}
 
@@ -242,19 +265,44 @@
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
-		background:
-			radial-gradient(circle at 50% 115%, rgba(#8dd9a5, 0.8) 0 34%, transparent 34.2%),
-			linear-gradient(#c9efff 0 68%, #fff8d6 68% 100%);
+		background: linear-gradient(#c9efff 0 68%, #fff8d6 68% 100%);
 		touch-action: manipulation;
 	}
 
-	.sky-decoration {
+	.background-meadow {
+		background:
+			radial-gradient(circle at 50% 115%, rgba(#8dd9a5, 0.8) 0 34%, transparent 34.2%),
+			linear-gradient(#c9efff 0 68%, #fff8d6 68% 100%);
+	}
+
+	.background-candy {
+		background:
+			radial-gradient(circle at 20% 82%, rgba(#fff, 0.82) 0 12%, transparent 12.4%),
+			radial-gradient(circle at 82% 15%, rgba(#ffb1d1, 0.58) 0 16%, transparent 16.4%),
+			linear-gradient(#ffcce0 0 64%, #fff1aa 64% 100%);
+	}
+
+	.background-ocean {
+		background:
+			radial-gradient(ellipse at 50% 105%, rgba(#74d5c2, 0.9) 0 36%, transparent 36.4%),
+			linear-gradient(#b9eeff 0 58%, #74d9ed 58% 100%);
+	}
+
+	.background-night {
+		background:
+			radial-gradient(circle at 74% 18%, rgba(#fff5a6, 0.85) 0 5%, transparent 5.3%),
+			radial-gradient(circle at 50% 115%, rgba(#9688e6, 0.72) 0 36%, transparent 36.4%),
+			linear-gradient(#514a9d 0 66%, #8b82d1 66% 100%);
+	}
+
+	.scene-decoration {
 		position: absolute;
 		z-index: 1;
-		color: rgba(#fff, 0.88);
-		font-size: clamp(5rem, 10vw, 8rem);
+		font-size: clamp(3.4rem, 7vw, 6rem);
 		line-height: 1;
 		pointer-events: none;
+		filter: drop-shadow(0 0.2rem 0.25rem rgba($ink, 0.14));
+		animation: scene-float 3s ease-in-out infinite alternate;
 	}
 
 	.decoration-one {
@@ -265,7 +313,7 @@
 	.decoration-two {
 		top: 18%;
 		right: 7%;
-		transform: scale(0.72);
+		animation-delay: -1.3s;
 	}
 
 	.start-button {
@@ -749,6 +797,15 @@
 		}
 	}
 
+	@keyframes scene-float {
+		from {
+			transform: translateY(0) rotate(-8deg);
+		}
+		to {
+			transform: translateY(-1rem) rotate(8deg);
+		}
+	}
+
 	@keyframes start-bob {
 		from {
 			transform: translateY(0) rotate(-1deg);
@@ -776,7 +833,8 @@
 		.magic-cloud,
 		.magic-particle,
 		.result-group,
-		.sparkle {
+		.sparkle,
+		.scene-decoration {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
 		}

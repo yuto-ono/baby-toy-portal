@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CREATURES, createAdditionProblem, createAnswerOptions } from './additionProblem';
+import {
+	BACKGROUNDS,
+	CREATURES,
+	createAdditionProblem,
+	createAnswerOptions
+} from './additionProblem';
 
 describe('createAdditionProblem', () => {
 	it('左右の数に0を含まず、答えを10以下にする', () => {
@@ -43,6 +48,18 @@ describe('createAdditionProblem', () => {
 		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🐼');
 		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🫧');
 		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🐾');
+	});
+
+	it('4種類の背景を選び、同じ背景を連続させない', () => {
+		const selectedBackgrounds = BACKGROUNDS.map(
+			(_, index) => createAdditionProblem(null, () => (index + 0.5) / BACKGROUNDS.length).background
+		);
+
+		expect(selectedBackgrounds).toEqual(BACKGROUNDS);
+
+		const previous = createAdditionProblem(null, () => 0);
+		const next = createAdditionProblem(previous, () => 0);
+		expect(next.background).not.toBe(previous.background);
 	});
 });
 
