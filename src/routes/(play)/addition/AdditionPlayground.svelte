@@ -297,22 +297,23 @@
 
 	.scene-decoration {
 		position: absolute;
-		z-index: 1;
-		font-size: clamp(3.4rem, 7vw, 6rem);
+		z-index: 0;
+		opacity: 0.28;
+		font-size: clamp(2rem, 4.5vw, 3.8rem);
 		line-height: 1;
 		pointer-events: none;
-		filter: drop-shadow(0 0.2rem 0.25rem rgba($ink, 0.14));
-		animation: scene-float 3s ease-in-out infinite alternate;
+		filter: saturate(0.72) blur(0.45px);
+		animation: scene-float 5s ease-in-out infinite alternate;
 	}
 
 	.decoration-one {
-		top: 5%;
-		left: 8%;
+		top: 8%;
+		left: 5%;
 	}
 
 	.decoration-two {
-		top: 18%;
-		right: 7%;
+		top: 13%;
+		right: 4%;
 		animation-delay: -1.3s;
 	}
 
@@ -799,10 +800,10 @@
 
 	@keyframes scene-float {
 		from {
-			transform: translateY(0) rotate(-8deg);
+			transform: translateY(0) rotate(-4deg) scale(0.92);
 		}
 		to {
-			transform: translateY(-1rem) rotate(8deg);
+			transform: translateY(-0.45rem) rotate(4deg) scale(1);
 		}
 	}
 
