@@ -42,11 +42,16 @@ export const CREATURES = [
 
 export type Creature = (typeof CREATURES)[number];
 
+export const BACKGROUNDS = ['meadow', 'candy', 'ocean', 'night'] as const;
+
+export type AdditionBackground = (typeof BACKGROUNDS)[number];
+
 export type AdditionProblem = {
 	left: number;
 	right: number;
 	total: number;
 	creature: Creature;
+	background: AdditionBackground;
 };
 
 const MIN_TOTAL = 2;
@@ -75,11 +80,17 @@ export function createAdditionProblem(
 		}
 	}
 
+	let background = BACKGROUNDS[selectIndex(BACKGROUNDS.length, random)];
+	if (previous?.background === background) {
+		background = BACKGROUNDS[(BACKGROUNDS.indexOf(background) + 1) % BACKGROUNDS.length];
+	}
+
 	return {
 		left,
 		right: total - left,
 		total,
-		creature: CREATURES[selectIndex(CREATURES.length, random)]
+		creature: CREATURES[selectIndex(CREATURES.length, random)],
+		background
 	};
 }
 

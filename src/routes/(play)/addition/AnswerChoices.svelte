@@ -4,11 +4,13 @@
 	let {
 		options,
 		correctAnswer,
-		oncorrect
+		oncorrect,
+		onwrong
 	}: {
 		options: readonly [number, number];
 		correctAnswer: number;
 		oncorrect: () => void;
+		onwrong: () => void;
 	} = $props();
 
 	const WRONG_ANSWER_EXIT_DURATION_MS = 280;
@@ -30,6 +32,7 @@
 			return;
 		}
 
+		onwrong();
 		disappearingAnswer = answer;
 		removalTimer = setTimeout(() => {
 			removedAnswers = [...removedAnswers, answer];
