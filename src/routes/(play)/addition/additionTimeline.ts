@@ -61,3 +61,13 @@ export function getAdditionAnnouncement(
 
 	return { type: 'number', value: problem[announcement] };
 }
+
+const PARENT_ARRIVAL_DURATION_MS = 2_600;
+const FAMILY_DEPARTURE_DURATION_MS = 2_800;
+
+export function getAdditionStepDuration(phase: AdditionPhase, correct: boolean): number {
+	if (!correct) return ADDITION_STEP_DURATION_MS;
+	if (phase === 'giant-dance') return PARENT_ARRIVAL_DURATION_MS;
+	if (phase === 'clear') return FAMILY_DEPARTURE_DURATION_MS;
+	return ADDITION_STEP_DURATION_MS;
+}

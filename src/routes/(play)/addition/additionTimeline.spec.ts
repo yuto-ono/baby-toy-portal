@@ -3,7 +3,8 @@ import { createAdditionProblem } from './additionProblem';
 import {
 	ADDITION_STEP_DURATION_MS,
 	ADDITION_STEPS,
-	getAdditionAnnouncement
+	getAdditionAnnouncement,
+	getAdditionStepDuration
 } from './additionTimeline';
 
 describe('ADDITION_STEPS', () => {
@@ -29,5 +30,23 @@ describe('ADDITION_STEPS', () => {
 			null,
 			null
 		]);
+	});
+});
+
+describe('getAdditionStepDuration', () => {
+	it('正解したときは、お迎えと一緒に帰る時間をゆったり確保する', () => {
+		for (const phase of ['giant-dance', 'clear'] as const) {
+			expect(getAdditionStepDuration(phase, true)).toBeGreaterThan(ADDITION_STEP_DURATION_MS);
+			expect(getAdditionStepDuration(phase, false)).toBe(ADDITION_STEP_DURATION_MS);
+		}
+	});
+
+	it('読み上げ中のテンポは変えない', () => {
+		for (const phase of ADDITION_STEPS.filter(
+			(phase) => phase !== 'giant-dance' && phase !== 'clear'
+		)) {
+			expect(getAdditionStepDuration(phase, true)).toBe(ADDITION_STEP_DURATION_MS);
+			expect(getAdditionStepDuration(phase, false)).toBe(ADDITION_STEP_DURATION_MS);
+		}
 	});
 });
