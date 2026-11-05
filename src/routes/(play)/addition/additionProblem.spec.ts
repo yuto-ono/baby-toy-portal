@@ -50,16 +50,21 @@ describe('createAdditionProblem', () => {
 		expect(CREATURES.map((creature) => creature.symbol)).not.toContain('🐾');
 	});
 
-	it('4種類の背景を選び、同じ背景を連続させない', () => {
+	it('登録されたすべての背景を選び、同じ背景を連続させない', () => {
 		const selectedBackgrounds = BACKGROUNDS.map(
 			(_, index) => createAdditionProblem(null, () => (index + 0.5) / BACKGROUNDS.length).background
 		);
 
 		expect(selectedBackgrounds).toEqual(BACKGROUNDS);
 
-		const previous = createAdditionProblem(null, () => 0);
-		const next = createAdditionProblem(previous, () => 0);
-		expect(next.background).not.toBe(previous.background);
+		for (const [index, background] of BACKGROUNDS.entries()) {
+			const random = () => (index + 0.5) / BACKGROUNDS.length;
+			const previous = createAdditionProblem(null, random);
+			const next = createAdditionProblem(previous, random);
+			expect(previous.background).toBe(background);
+			expect(next.background).not.toBe(background);
+			expect(BACKGROUNDS).toContain(next.background);
+		}
 	});
 });
 
