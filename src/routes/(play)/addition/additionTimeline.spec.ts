@@ -7,9 +7,9 @@ import {
 } from './additionTimeline';
 
 describe('ADDITION_STEPS', () => {
-	it('1秒ごとの10拍で一問を進める', () => {
+	it('読み上げ後に合体、ダンス、退場の順で進める', () => {
 		expect(ADDITION_STEP_DURATION_MS).toBe(1_000);
-		expect(ADDITION_STEPS).toHaveLength(10);
+		expect(ADDITION_STEPS.slice(-3)).toEqual(['result-three', 'giant-dance', 'clear']);
 	});
 
 	it('2 + 4を指定した順番で読み上げる', () => {
@@ -26,6 +26,7 @@ describe('ADDITION_STEPS', () => {
 			{ type: 'number', value: 6 },
 			{ type: 'number', value: 6 },
 			{ type: 'number', value: 6 },
+			null,
 			null
 		]);
 	});

@@ -12,6 +12,7 @@ export const ADDITION_STEPS = [
 	'result-one',
 	'result-two',
 	'result-three',
+	'giant-dance',
 	'clear'
 ] as const;
 
@@ -33,6 +34,7 @@ const ANNOUNCEMENT_BY_PHASE = {
 	'result-one': 'total',
 	'result-two': 'total',
 	'result-three': 'total',
+	'giant-dance': null,
 	clear: null
 } as const satisfies Record<
 	AdditionPhase,
