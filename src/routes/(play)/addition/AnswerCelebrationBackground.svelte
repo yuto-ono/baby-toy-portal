@@ -47,7 +47,7 @@
 			radial-gradient(circle at 52% 78%, rgba(#ffe45e, 0.4), transparent 38%),
 			linear-gradient(120deg, rgba(#ffd4eb, 0.9), rgba(#dbf7ff, 0.9), rgba(#fff0ae, 0.9));
 		pointer-events: none;
-		animation: background-arrives 1s ease-out both;
+		animation: background-arrives 2s ease-out forwards;
 
 		span {
 			color: rgba(#ef4f91, 0.2);
@@ -146,13 +146,19 @@
 	}
 
 	@keyframes background-arrives {
-		from {
+		0% {
 			opacity: 0;
 			transform: scale(1.08);
 		}
-		to {
+		15%,
+		45% {
 			opacity: 1;
 			transform: scale(1);
+		}
+		100% {
+			opacity: 0;
+			transform: scale(1);
+			visibility: hidden;
 		}
 	}
 

@@ -12,6 +12,8 @@
 	import AnswerChoices from './AnswerChoices.svelte';
 	import CountingGroup from './CountingGroup.svelte';
 	import AdditionScenery from './AdditionScenery.svelte';
+	import GiantCreatureFinale from './GiantCreatureFinale.svelte';
+	import AnswerNumberSnow from './AnswerNumberSnow.svelte';
 
 	type FocusedGroup = 'left' | 'right' | 'result';
 
@@ -148,6 +150,7 @@
 
 	{#if bonusEarned}
 		<AnswerCelebrationBackground answer={problem.total} firstTry={!madeMistake} />
+		<AnswerNumberSnow answer={problem.total} />
 	{/if}
 
 	{#if !started}
@@ -220,7 +223,13 @@
 			/>
 		{/if}
 
-		{#if stepIndex >= 6}
+		{#if bonusEarned && (phase === 'giant-dance' || phase === 'clear')}
+			<GiantCreatureFinale
+				answer={problem.total}
+				creature={problem.creature}
+				departing={phase === 'clear'}
+			/>
+		{:else if stepIndex >= 6}
 			<div class="result-group">
 				<span class="sparkle sparkle-one" aria-hidden="true">✦</span>
 				<span class="sparkle sparkle-two" aria-hidden="true">★</span>
@@ -232,6 +241,7 @@
 						placement="result"
 						focused={focusedGroup === 'result'}
 						celebrating={bonusEarned && stepIndex === 6}
+						absorbing={bonusEarned && phase === 'result-three'}
 						onselect={() => focus('result', problem.total)}
 					/>
 				{/key}
@@ -533,13 +543,17 @@
 		animation-name: result-bounce;
 	}
 
-	.phase-result-three .result-group {
-		animation-name: result-shine;
+	.phase-clear .result-group {
+		animation: result-fade $step-duration ease-in forwards;
 	}
 
-	.phase-clear .result-group {
-		animation-name: result-clear;
-		animation-timing-function: ease-in;
+	@keyframes result-fade {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
 	}
 
 	.sparkle {
@@ -742,32 +756,6 @@
 		}
 		70% {
 			transform: translate(-50%, -46%) scale(0.92) rotate(5deg);
-		}
-	}
-
-	@keyframes result-shine {
-		0%,
-		100% {
-			filter: brightness(1);
-			transform: translate(-50%, -50%) rotate(0deg);
-		}
-		30% {
-			filter: brightness(1.12);
-			transform: translate(-50%, -50%) rotate(-2deg);
-		}
-		70% {
-			transform: translate(-50%, -50%) rotate(2deg);
-		}
-	}
-
-	@keyframes result-clear {
-		from {
-			opacity: 1;
-			transform: translate(-50%, -50%) scale(1);
-		}
-		to {
-			opacity: 0;
-			transform: translate(-50%, -54%) scale(0.72);
 		}
 	}
 
