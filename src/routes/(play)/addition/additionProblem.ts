@@ -42,7 +42,16 @@ export const CREATURES = [
 
 export type Creature = (typeof CREATURES)[number];
 
-export const BACKGROUNDS = ['meadow', 'candy', 'ocean', 'night'] as const;
+export const BACKGROUNDS = [
+	'meadow',
+	'candy',
+	'ocean',
+	'night',
+	'forest',
+	'snow',
+	'space',
+	'castle'
+] as const;
 
 export type AdditionBackground = (typeof BACKGROUNDS)[number];
 

@@ -8,6 +8,9 @@
 </script>
 
 <div class="bonus-background" aria-hidden="true">
+	<div class="celebration-rays"></div>
+	<div class="celebration-ring"></div>
+	<div class="celebration-ring second-ring"></div>
 	{#each numberIndexes as index (index)}
 		<span
 			style:--bonus-angle={`${((index % 5) - 2) * 8}deg`}
@@ -61,6 +64,49 @@
 			&:nth-child(3n) {
 				color: rgba(#f0a400, 0.2);
 			}
+		}
+	}
+
+	.celebration-rays {
+		position: absolute;
+		inset: -100%;
+		background: repeating-conic-gradient(from 0deg, #ffe07830 0deg 12deg, transparent 12deg 30deg);
+		animation: rays-turn 24s linear infinite;
+	}
+
+	.celebration-ring {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: min(55vw, 32rem);
+		aspect-ratio: 1;
+		border: 1.5rem solid #ffe479;
+		border-radius: 50%;
+		box-shadow:
+			0 0 0 1rem #ff9dc5,
+			0 0 0 2rem #b8adff,
+			0 0 3rem 2rem #fff8;
+		animation: celebration-wave 1.6s ease-out both;
+	}
+
+	.second-ring {
+		animation-delay: 350ms;
+	}
+
+	@keyframes rays-turn {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes celebration-wave {
+		from {
+			opacity: 0.85;
+			transform: translate(-50%, -50%) scale(0.1);
+		}
+		to {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(2.5);
 		}
 	}
 
@@ -137,7 +183,9 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.bonus-background,
-		.bonus-background span {
+		.bonus-background span,
+		.celebration-rays,
+		.celebration-ring {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
 		}

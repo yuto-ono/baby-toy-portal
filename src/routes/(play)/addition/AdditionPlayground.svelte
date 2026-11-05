@@ -11,6 +11,7 @@
 	import AnswerCelebrationBackground from './AnswerCelebrationBackground.svelte';
 	import AnswerChoices from './AnswerChoices.svelte';
 	import CountingGroup from './CountingGroup.svelte';
+	import AdditionScenery from './AdditionScenery.svelte';
 
 	type FocusedGroup = 'left' | 'right' | 'result';
 
@@ -143,24 +144,7 @@
 	class:paused={focusedGroup !== null}
 	aria-label="足し算で遊ぶ場所"
 >
-	<div class="scene-decoration decoration-one" aria-hidden="true">
-		{problem.background === 'meadow'
-			? '🌼'
-			: problem.background === 'candy'
-				? '🍬'
-				: problem.background === 'ocean'
-					? '🐠'
-					: '⭐'}
-	</div>
-	<div class="scene-decoration decoration-two" aria-hidden="true">
-		{problem.background === 'meadow'
-			? '🌈'
-			: problem.background === 'candy'
-				? '🎀'
-				: problem.background === 'ocean'
-					? '🐳'
-					: '🌙'}
-	</div>
+	<AdditionScenery background={problem.background} />
 
 	{#if bonusEarned}
 		<AnswerCelebrationBackground answer={problem.total} firstTry={!madeMistake} />
@@ -295,26 +279,22 @@
 			linear-gradient(#514a9d 0 66%, #8b82d1 66% 100%);
 	}
 
-	.scene-decoration {
-		position: absolute;
-		z-index: 0;
-		opacity: 0.28;
-		font-size: clamp(2rem, 4.5vw, 3.8rem);
-		line-height: 1;
-		pointer-events: none;
-		filter: saturate(0.72) blur(0.45px);
-		animation: scene-float 5s ease-in-out infinite alternate;
+	.background-forest {
+		background: linear-gradient(#d1f2c4, #e7f7c5 65%, #88c99a);
 	}
 
-	.decoration-one {
-		top: 8%;
-		left: 5%;
+	.background-snow {
+		background: linear-gradient(#b5daf6, #e8f4ff 70%, #fff);
 	}
 
-	.decoration-two {
-		top: 13%;
-		right: 4%;
-		animation-delay: -1.3s;
+	.background-space {
+		background:
+			radial-gradient(ellipse at 25% 30%, #8067b7, transparent 65%),
+			linear-gradient(#292759, #65549d);
+	}
+
+	.background-castle {
+		background: linear-gradient(#f9d7ed, #ffedcf 70%, #b5dba4);
 	}
 
 	.start-button {
@@ -328,7 +308,7 @@
 		gap: 1rem;
 		padding: 2rem;
 		border: 0;
-		background: rgba(#fff8e7, 0.32);
+		background: rgba(#fff8e7, 0.08);
 		color: $ink;
 		font: inherit;
 		cursor: pointer;
@@ -377,7 +357,11 @@
 		display: flex;
 		align-items: center;
 		gap: clamp(0.65rem, 2vw, 1.4rem);
-		padding: 0.35rem 1.4rem;
+		padding: 0.5rem 1.6rem;
+		border: 3px solid rgba(#fff, 0.85);
+		border-radius: 2rem;
+		background: rgba(#fff, 0.86);
+		box-shadow: 0 0.4rem 0 rgba(#7557e8, 0.12);
 		font-size: clamp(3.5rem, 7vw, 5.5rem);
 		font-weight: 900;
 		line-height: 1;
@@ -798,15 +782,6 @@
 		}
 	}
 
-	@keyframes scene-float {
-		from {
-			transform: translateY(0) rotate(-4deg) scale(0.92);
-		}
-		to {
-			transform: translateY(-0.45rem) rotate(4deg) scale(1);
-		}
-	}
-
 	@keyframes start-bob {
 		from {
 			transform: translateY(0) rotate(-1deg);
@@ -834,8 +809,7 @@
 		.magic-cloud,
 		.magic-particle,
 		.result-group,
-		.sparkle,
-		.scene-decoration {
+		.sparkle {
 			animation-duration: 1ms;
 			animation-iteration-count: 1;
 		}
