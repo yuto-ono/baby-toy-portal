@@ -7,7 +7,6 @@
 		placement,
 		focused = false,
 		celebrating = false,
-		absorbing = false,
 		onselect
 	}: {
 		value: number;
@@ -15,7 +14,6 @@
 		placement: 'left' | 'right' | 'result';
 		focused?: boolean;
 		celebrating?: boolean;
-		absorbing?: boolean;
 		onselect: () => void;
 	} = $props();
 
@@ -38,7 +36,6 @@
 <div
 	class="counting-group"
 	class:focused
-	class:absorbing
 	class:celebrating
 	class:left={placement === 'left'}
 	class:right={placement === 'right'}
@@ -47,7 +44,6 @@
 	<button
 		type="button"
 		class="number"
-		disabled={absorbing}
 		onpointerdown={handlePointerDown}
 		onclick={handleClick}
 		aria-label={`${value}を聞く`}
@@ -68,7 +64,6 @@
 			<button
 				type="button"
 				class="creature"
-				disabled={absorbing}
 				style:--creature-index={index}
 				class:arrival-hop={index % 4 === 0}
 				class:arrival-spin={index % 4 === 1}
@@ -259,44 +254,6 @@
 			} @else if $index % 4 == 3 {
 				color: #8dd6e8;
 			}
-		}
-	}
-
-	$absorption-duration: 1s;
-
-	.counting-group.absorbing {
-		.creatures {
-			animation: absorb-creatures $absorption-duration ease-in forwards;
-		}
-		.number {
-			animation: absorb-number $absorption-duration ease-in forwards;
-		}
-	}
-
-	@keyframes absorb-creatures {
-		0% {
-			opacity: 1;
-			transform: translateY(0) scale(1) rotate(0deg);
-		}
-		35% {
-			opacity: 1;
-			transform: translateY(-1rem) scale(1.15) rotate(-12deg);
-		}
-		100% {
-			opacity: 0;
-			transform: translateY(-5rem) scale(0) rotate(360deg);
-		}
-	}
-
-	@keyframes absorb-number {
-		0%,
-		50% {
-			opacity: 1;
-			transform: scale(1);
-		}
-		100% {
-			opacity: 0;
-			transform: scale(0.3);
 		}
 	}
 
@@ -498,8 +455,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.counting-group.absorbing .creatures,
-		.counting-group.absorbing .number,
 		.counting-group.focused,
 		.counting-group.focused .number,
 		.counting-group.focused .creature,

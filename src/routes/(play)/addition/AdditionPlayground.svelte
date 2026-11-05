@@ -6,6 +6,7 @@
 		ADDITION_STEP_DURATION_MS,
 		ADDITION_STEPS,
 		getAdditionAnnouncement,
+		getAdditionStepDuration,
 		type AdditionPhase
 	} from './additionTimeline';
 	import AnswerCelebrationBackground from './AnswerCelebrationBackground.svelte';
@@ -48,7 +49,7 @@
 		void additionAudioPlayer.play(getAdditionAnnouncement(activeProblem, activePhase));
 	}
 
-	function scheduleNextStep(delay = ADDITION_STEP_DURATION_MS) {
+	function scheduleNextStep(delay = getAdditionStepDuration(phase, bonusEarned)) {
 		clearStepTimer();
 		remainingStepMs = delay;
 		stepDeadline = performance.now() + delay;
@@ -228,6 +229,9 @@
 				answer={problem.total}
 				creature={problem.creature}
 				departing={phase === 'clear'}
+				focused={focusedGroup === 'result'}
+				{focusVersion}
+				onselect={() => focus('result', problem.total)}
 			/>
 		{:else if stepIndex >= 6}
 			<div class="result-group">
@@ -241,7 +245,6 @@
 						placement="result"
 						focused={focusedGroup === 'result'}
 						celebrating={bonusEarned && stepIndex === 6}
-						absorbing={bonusEarned && phase === 'result-three'}
 						onselect={() => focus('result', problem.total)}
 					/>
 				{/key}
