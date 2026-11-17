@@ -1,7 +1,9 @@
 <script lang="ts">
+	import Download from '@lucide/svelte/icons/download';
 	import Check from '@lucide/svelte/icons/check';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Undo2 from '@lucide/svelte/icons/undo-2';
+	import { downloadDrawing } from './downloadDrawing';
 
 	const colors = [
 		{ name: 'くろ', value: '#333145' },
@@ -23,6 +25,8 @@
 	let strokes = $state.raw<Stroke[]>([]);
 	let currentStroke = $state<Stroke>();
 	let activePointer = $state<number>();
+	let paper = $state<SVGSVGElement>();
+	let saveError = $state(false);
 
 	function drawingPoint(event: PointerEvent, board: SVGSVGElement) {
 		const bounds = board.getBoundingClientRect();
@@ -97,10 +101,31 @@
 				<Trash2 size={20} aria-hidden="true" />
 				ぜんぶ けす
 			</button>
+			<button
+				type="button"
+				disabled={!strokes.length || currentStroke !== undefined}
+				onclick={() => {
+					if (!paper) return;
+
+					saveError = false;
+					try {
+						downloadDrawing(paper, strokes, penWidth);
+					} catch {
+						saveError = true;
+					}
+				}}
+			>
+				<Download size={20} aria-hidden="true" />
+				ほぞん
+			</button>
+			{#if saveError}
+				<span role="alert">ほぞんできませんでした。もういちど ためしてね。</span>
+			{/if}
 		</div>
 	</div>
 
 	<svg
+		bind:this={paper}
 		class="paper"
 		role="img"
 		aria-label="ゆびやマウスで えを かくところ"
