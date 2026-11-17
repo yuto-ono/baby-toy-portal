@@ -7,3 +7,6 @@
 # 足し算遊びと専用音声
 /src/routes/(play)/addition/ @marimonon
 /static/audio/addition/ @marimonon
+
+# お絵かき遊び
+/src/routes/(play)/drawing/ @marimonon
