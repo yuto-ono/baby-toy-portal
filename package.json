@@ -2,9 +2,9 @@
 	"name": "baby-toy-portal",
 	"private": true,
 	"version": "0.0.1",
-	"packageManager": "pnpm@11.6.0",
+	"packageManager": "pnpm@12.21.0",
 	"engines": {
-		"node": "24.16.0"
+		"node": "24.22.3"
 	},
 	"type": "module",
 	"scripts": {
